@@ -39,6 +39,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.healthconnectsample.data.HealthConnectManager
 import kotlinx.coroutines.launch
 import java.io.IOException
+import java.time.Instant
+import java.time.ZonedDateTime
 import java.util.UUID
 
 class DifferentialChangesViewModel(private val healthConnectManager: HealthConnectManager) :
@@ -103,6 +105,12 @@ class DifferentialChangesViewModel(private val healthConnectManager: HealthConne
                             }
                             is HealthConnectManager.ChangesMessage.NoMoreChanges -> {
                                 changesToken.value = message.nextChangesToken
+                                val start : Instant = ZonedDateTime.now().minusDays(1).toInstant()
+                                val end : Instant = ZonedDateTime.now().toInstant()
+
+                                val readExerciseSessions =
+                                    healthConnectManager.readExerciseSessions(start, end)
+                                Log.i("CurrentExerciseReadings", "$readExerciseSessions")
                                 Log.i(TAG, "Updating changes token: ${changesToken.value}")
                             }
                         }

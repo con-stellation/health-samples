@@ -16,11 +16,19 @@
 package com.example.exercisesamplecompose.data
 
 import android.annotation.SuppressLint
+import android.content.Context
+import android.util.Log
+import androidx.compose.foundation.gestures.forEach
+import androidx.health.connect.client.HealthConnectClient
+import androidx.health.connect.client.records.ExerciseSessionRecord
+import androidx.health.connect.client.request.ReadRecordsRequest
+import androidx.health.connect.client.time.TimeRangeFilter
 import androidx.health.services.client.ExerciseClient
 import androidx.health.services.client.ExerciseUpdateCallback
 import androidx.health.services.client.HealthServicesClient
 import androidx.health.services.client.data.Availability
 import androidx.health.services.client.data.ComparisonType
+import androidx.health.services.client.data.DataPointContainer
 import androidx.health.services.client.data.DataType
 import androidx.health.services.client.data.DataTypeCondition
 import androidx.health.services.client.data.ExerciseConfig
@@ -39,6 +47,13 @@ import androidx.health.services.client.prepareExercise
 import androidx.health.services.client.resumeExercise
 import androidx.health.services.client.startExercise
 import com.example.exercisesamplecompose.service.ExerciseLogger
+import dagger.Module
+import dagger.hilt.InstallIn
+import dagger.Provides
+import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
+import java.time.Instant
+import java.time.ZonedDateTime
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.Duration
@@ -54,11 +69,13 @@ import kotlinx.coroutines.flow.callbackFlow
 class ExerciseClientManager
 @Inject
 constructor(
+    healthConnectClient: HealthConnectClient,
     healthServicesClient: HealthServicesClient,
     private val logger: ExerciseLogger
 ) {
-    val exerciseClient: ExerciseClient = healthServicesClient.exerciseClient
 
+    val exerciseClient: ExerciseClient = healthServicesClient.exerciseClient
+    val hcc : HealthConnectClient = healthConnectClient
     suspend fun getExerciseCapabilities(): ExerciseTypeCapabilities? {
         val capabilities = exerciseClient.getCapabilities()
 
@@ -111,11 +128,11 @@ constructor(
             exerciseGoals.add(
                 ExerciseGoal.createOneTimeGoal(
                     condition =
-                    DataTypeCondition(
-                        dataType = DataType.DISTANCE_TOTAL,
-                        threshold = thresholds.distance * 1000, // our app uses kilometers
-                        comparisonType = ComparisonType.GREATER_THAN_OR_EQUAL
-                    )
+                        DataTypeCondition(
+                            dataType = DataType.DISTANCE_TOTAL,
+                            threshold = thresholds.distance * 1000, // our app uses kilometers
+                            comparisonType = ComparisonType.GREATER_THAN_OR_EQUAL
+                        )
                 )
             )
         }
@@ -144,6 +161,7 @@ constructor(
                 exerciseGoals = exerciseGoals
             )
 
+        readHistoricData()
         exerciseClient.startExercise(config)
         logger.log("Started exercise")
     }
@@ -200,6 +218,8 @@ constructor(
             val callback =
                 object : ExerciseUpdateCallback {
                     override fun onExerciseUpdateReceived(update: ExerciseUpdate) {
+                        val metrics = update.latestMetrics
+                        logMetrics(metrics)
                         trySendBlocking(ExerciseMessage.ExerciseUpdateMessage(update))
                     }
 
@@ -236,7 +256,37 @@ constructor(
     private companion object {
         const val CALORIES_THRESHOLD = 250.0
     }
+    private fun logMetrics(metrics: DataPointContainer) {
+        metrics.getData(DataType.HEART_RATE_BPM).forEach { dataPoint ->
+            val bpm = dataPoint.value
+            val timeStamp = dataPoint.timeDurationFromBoot // Oder eine andere Zeitangabe
+            Log.d("ExerciseService_HR_Background", "Gemessene Herzfrequenz (im Service): $bpm BPM, Zeitstempel: $timeStamp")
+
+        }
+    }
+
+    private fun dataProcessing(metrics: DataPointContainer) {
+        //TODO grab da data and do something with it
+    }
+
+    private suspend fun readHistoricData(){
+        val start : Instant = ZonedDateTime.now().minusDays(1).toInstant()
+        val end : Instant = ZonedDateTime.now().toInstant()
+        val req = ReadRecordsRequest(
+            recordType = ExerciseSessionRecord::class,
+            timeRangeFilter = TimeRangeFilter.between(start, end),
+            ascendingOrder = false,
+            pageSize = 1
+        )
+        val readRecords = hcc.readRecords(req)
+        if(readRecords.records.isEmpty()){
+            Log.d("ExerciseClientManager", "ReadRecords: Records are empty. No logged sessions for the past 24 hours.")
+        } else {
+            Log.d("ExerciseClientManager", "ReadRecords: $readRecords")
+        }
+    }
 }
+
 
 data class Thresholds(
     var distance: Double,

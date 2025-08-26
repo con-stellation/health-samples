@@ -1,9 +1,10 @@
 [versions]
-android-gradle-plugin = "8.10.1"
-androidx-activity = "1.9.2"
+android-gradle-plugin = "8.12.1"
+androidx-activity = "1.10.1"
 androidx-compose = "1.7.8"
 androidx-lifecycle = "2.8.6"
 androidx-wear-compose = "1.5.0-beta04"
+connect-client = "1.2.0-alpha01"
 core-splashscreen = "1.0.1"
 dagger = "2.56.2"
 health-services = "1.0.0"
@@ -20,9 +21,10 @@ ktlint = "0.50.0"
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
 androidx-compose-navigation = "androidx.navigation:navigation-compose:2.8.4"
-androidx-compose-runtime = "androidx.compose.runtime:runtime:1.7.5"
+androidx-compose-runtime = "androidx.compose.runtime:runtime:1.9.0"
 androidx-compose-ui-tooling = { module = "androidx.wear.compose:compose-ui-tooling", version.ref = "androidx-wear-compose" }
 androidx-concurrent = "androidx.concurrent:concurrent-futures-ktx:1.2.0"
+androidx-connect-client = { module = "androidx.health.connect:connect-client", version.ref = "connect-client" }
 androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "core-splashscreen" }
 androidx-health-services = { module = "androidx.health:health-services-client", version.ref = "health-services" }
 androidx-lifecycle-common-java8 = { module = "androidx.lifecycle:lifecycle-common-java8", version.ref = "androidx-lifecycle"}
@@ -43,7 +45,7 @@ compose-wear-navigation = "androidx.wear.compose:compose-navigation:1.4.0"
 dagger-hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "dagger"}
 dagger-hilt-android-compiler = {module = "com.google.dagger:hilt-android-compiler", version.ref = "dagger"}
 desugar-jdk-libs = "com.android.tools:desugar_jdk_libs:2.1.2"
-guava = "com.google.guava:guava:33.3.1-android"
+guava = "com.google.guava:guava:33.4.8-android"
 hilt-navigation-compose = "androidx.hilt:hilt-navigation-compose:1.2.0"
 hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "hilt" }
 horologist-compose-layout = { module = "com.google.android.horologist:horologist-compose-layout", version.ref = "horologist" }

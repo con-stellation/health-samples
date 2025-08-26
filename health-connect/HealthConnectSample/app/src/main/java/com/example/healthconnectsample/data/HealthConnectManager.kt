@@ -20,6 +20,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Resources.NotFoundException
 import android.os.Build
+import android.util.Log
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.compose.runtime.mutableStateOf
 import androidx.health.connect.client.HealthConnectClient
@@ -132,11 +133,19 @@ class HealthConnectManager(private val context: Context) {
      * more that conceptually, this was the activity being undertaken.
      */
     suspend fun readExerciseSessions(start: Instant, end: Instant): List<ExerciseSessionRecord> {
+        val start : Instant = ZonedDateTime.now().minusDays(1).toInstant()
+        val end : Instant = ZonedDateTime.now().toInstant()
         val request = ReadRecordsRequest(
             recordType = ExerciseSessionRecord::class,
-            timeRangeFilter = TimeRangeFilter.between(start, end)
-        )
+            timeRangeFilter = TimeRangeFilter.between(start, end),
+            ascendingOrder = false)
         val response = healthConnectClient.readRecords(request)
+        if(response.records.isEmpty()){
+            Log.d("ExerciseClientManager", "ReadRecords: Records are empty. No logged sessions for the past 24 hours.")
+        } else {
+            Log.d("ExerciseClientManager", "ReadRecords: $response")
+            Log.d("ExerciseClientManager", "Latest record: ${response.records[0]}")
+        }
         return response.records
     }
 

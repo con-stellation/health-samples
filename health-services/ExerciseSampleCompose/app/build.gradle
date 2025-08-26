@@ -81,7 +81,7 @@ dependencies {
   // General compose dependencies
   implementation libs.androidx.activity.compose
   implementation libs.compose.ui.tooling.preview
-
+  implementation libs.androidx.connect.client
   // Compose for Wear OS Dependencies
   implementation libs.wear.compose.material
   implementation libs.androidx.material.icons.extended
