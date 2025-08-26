@@ -16,11 +16,13 @@
 package com.example.exercisesamplecompose.data
 
 import android.annotation.SuppressLint
+import android.util.Log
 import androidx.health.services.client.ExerciseClient
 import androidx.health.services.client.ExerciseUpdateCallback
 import androidx.health.services.client.HealthServicesClient
 import androidx.health.services.client.data.Availability
 import androidx.health.services.client.data.ComparisonType
+import androidx.health.services.client.data.DataPointContainer
 import androidx.health.services.client.data.DataType
 import androidx.health.services.client.data.DataTypeCondition
 import androidx.health.services.client.data.ExerciseConfig
@@ -200,6 +202,7 @@ constructor(
             val callback =
                 object : ExerciseUpdateCallback {
                     override fun onExerciseUpdateReceived(update: ExerciseUpdate) {
+                        logMetrics(update.latestMetrics)
                         trySendBlocking(ExerciseMessage.ExerciseUpdateMessage(update))
                     }
 
@@ -238,6 +241,14 @@ constructor(
     }
 }
 
+private fun logMetrics(metrics: DataPointContainer) {
+    metrics.getData(DataType.HEART_RATE_BPM).forEach { dataPoint ->
+        val bpm = dataPoint.value
+        val timeStamp = dataPoint.timeDurationFromBoot // Oder eine andere Zeitangabe
+        Log.d("ExerciseService_HR_Background", "Gemessene Herzfrequenz (im Service): $bpm BPM, Zeitstempel: $timeStamp")
+
+    }
+}
 data class Thresholds(
     var distance: Double,
     var duration: Duration,
