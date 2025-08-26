@@ -120,6 +120,8 @@ dependencies {
   // Hilt
   implementation libs.hilt.navigation.compose
   implementation libs.dagger.hilt.android
+  implementation libs.androidx.wear.remote.interactions
+  implementation libs.play.services.wearable
   ksp(libs.hilt.compiler)
 
   coreLibraryDesugaring(libs.desugar.jdk.libs)
