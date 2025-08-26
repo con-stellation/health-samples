@@ -16,6 +16,10 @@
 package com.example.exercisesamplecompose.data
 
 import android.annotation.SuppressLint
+import android.content.Context
+import android.content.Intent
+import androidx.concurrent.futures.await
+import android.net.Uri
 import android.util.Log
 import androidx.health.services.client.ExerciseClient
 import androidx.health.services.client.ExerciseUpdateCallback
@@ -40,13 +44,21 @@ import androidx.health.services.client.pauseExercise
 import androidx.health.services.client.prepareExercise
 import androidx.health.services.client.resumeExercise
 import androidx.health.services.client.startExercise
+import androidx.wear.remote.interactions.RemoteActivityHelper
 import com.example.exercisesamplecompose.service.ExerciseLogger
+import com.google.android.gms.wearable.NodeClient
+import com.google.android.gms.wearable.Wearable
+import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.concurrent.Executor
+import java.util.concurrent.Executors
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.Duration
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.flow.callbackFlow
+import androidx.core.net.toUri
+import com.google.android.gms.tasks.Tasks
 
 /**
  * Entry point for [HealthServicesClient] APIs, wrapping them in coroutine-friendly APIs.
@@ -56,6 +68,7 @@ import kotlinx.coroutines.flow.callbackFlow
 class ExerciseClientManager
 @Inject
 constructor(
+    @ApplicationContext private val applicationContext: Context,
     healthServicesClient: HealthServicesClient,
     private val logger: ExerciseLogger
 ) {
@@ -79,6 +92,25 @@ constructor(
 
     suspend fun startExercise() {
         logger.log("Starting exercise")
+        val exec : Executor = Executors.newSingleThreadExecutor()
+        val connectedNodes = Tasks.await(Wearable.getNodeClient(applicationContext).connectedNodes)
+        Log.i("ExerciseClientService", "Connected Nodes: $connectedNodes")
+        if(!connectedNodes.isEmpty()){
+            val remoteActivityHelper = RemoteActivityHelper(applicationContext, exec)
+            val remoteResult = remoteActivityHelper.startRemoteActivity(
+                Intent(Intent.ACTION_VIEW).addCategory(Intent.CATEGORY_BROWSABLE).setData(Uri.parse("companionapp://sms92")),
+                connectedNodes[0].id
+            ).await()
+
+            try {
+                Log.i("WearOSRemote", "Remote Activity Started?")
+            } catch (e: Exception) {
+                Log.e("WearOSRemote", "Fehler beim Starten der Remote Activity", e)
+            }
+        } else {
+            Log.i("ExerciseClientService", "No connected devices detected. Cannot launch remote Companion.")
+        }
+
         // Types for which we want to receive metrics. Only ask for ones that are supported.
         val capabilities = getExerciseCapabilities()
 
