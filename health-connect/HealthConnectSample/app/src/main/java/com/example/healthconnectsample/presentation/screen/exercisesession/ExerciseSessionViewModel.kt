@@ -16,6 +16,7 @@
 package com.example.healthconnectsample.presentation.screen.exercisesession
 
 import android.os.RemoteException
+import android.util.Log
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -76,6 +77,7 @@ class ExerciseSessionViewModel(private val healthConnectManager: HealthConnectMa
     val permissionsLauncher = healthConnectManager.requestPermissionsActivityContract()
 
     fun initialLoad() {
+        Log.i("ExerciseSessionViewModel", "Called initialload. Now doing read functions.")
         viewModelScope.launch {
             tryWithPermissionsCheck {
                 readExerciseSessions()
@@ -112,11 +114,12 @@ class ExerciseSessionViewModel(private val healthConnectManager: HealthConnectMa
     }
 
     private suspend fun readExerciseSessions() {
-        val startOfDay = ZonedDateTime.now().truncatedTo(ChronoUnit.DAYS)
-        val now = Instant.now()
+        Log.i("ExerciseSessionViewModel", "Reading exercise sessions.")
+        val end = ZonedDateTime.now().toInstant()
+        val start = ZonedDateTime.now().minusDays(1).toInstant()
 
         sessionsList.value = healthConnectManager
-            .readExerciseSessions(startOfDay.toInstant(), now)
+            .readExerciseSessions(start, end)
             .map { record ->
                 val packageName = record.metadata.dataOrigin.packageName
                 ExerciseSession(

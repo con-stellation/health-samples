@@ -15,7 +15,9 @@
  */
 package com.example.healthconnectsample.presentation
 
+import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 
@@ -25,7 +27,8 @@ import androidx.activity.compose.setContent
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        val data: Uri? = intent?.data
+        Log.d("MainActivity", "OnCreate() called. Potentially via remote? Intentdata: $data")
         val healthConnectManager = (application as BaseApplication).healthConnectManager
 
         setContent {
