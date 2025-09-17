@@ -47,6 +47,15 @@ import androidx.health.connect.client.units.Energy
 import androidx.health.connect.client.units.Length
 import androidx.health.connect.client.units.Mass
 import com.example.healthconnectsample.R
+import com.google.android.gms.tasks.Task
+import com.google.android.gms.tasks.Tasks
+import com.google.android.gms.wearable.CapabilityClient
+import com.google.android.gms.wearable.CapabilityInfo
+import com.google.android.gms.wearable.DataClient
+import com.google.android.gms.wearable.DataItem
+import com.google.android.gms.wearable.PutDataMapRequest
+import com.google.android.gms.wearable.PutDataRequest
+import com.google.android.gms.wearable.Wearable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import java.io.IOException
@@ -63,7 +72,7 @@ const val MIN_SUPPORTED_SDK = Build.VERSION_CODES.O_MR1
 /** Demonstrates reading and writing from Health Connect. */
 class HealthConnectManager(private val context: Context) {
     private val healthConnectClient by lazy { HealthConnectClient.getOrCreate(context) }
-
+    private lateinit var dataClient : DataClient
     val healthConnectCompatibleApps by lazy {
         val intent = Intent("androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE")
 
@@ -138,6 +147,12 @@ class HealthConnectManager(private val context: Context) {
             timeRangeFilter = TimeRangeFilter.between(start, end)
         )
         val response = healthConnectClient.readRecords(request)
+//        val putDataReq : PutDataRequest = PutDataMapRequest.create("/exercise_session").run {
+//            dataMap.putString("Exercise ID", ""+response.records[0].metadata.id)
+//            asPutDataRequest()
+//        }.setUrgent()
+//
+//        val putDataTask: Task<DataItem> = dataClient.putDataItem(putDataReq)
         Log.i("HealthConnectManager", "readExerciseSessions: ${response.records}")
         return response.records
     }
@@ -506,4 +521,39 @@ class HealthConnectManager(private val context: Context) {
 
         data class ChangeList(val changes: List<Change>) : ChangesMessage()
     }
-}
+
+    fun calculateStress(): Int {
+        sendMessageToWatch()
+        return 0
+    }
+
+    //effort to try and send stressmeasurement results to wear os app
+    fun sendMessageToWatch() {
+        val capabilityInfo: CapabilityInfo = Tasks.await(
+            Wearable.getCapabilityClient(context)
+                .getCapability(
+                    "stress_measurement",
+                    CapabilityClient.FILTER_REACHABLE
+                )
+        )
+        val nodes = capabilityInfo.nodes
+        val node = nodes.firstOrNull { it.isNearby } ?: nodes.firstOrNull()
+        if (node == null) {
+            Log.w(
+                "WearableComms",
+                "Kein erreichbares Gerät mit der Fähigkeit 'stress_measurement' gefunden."
+            )
+            return
+        }
+        val nodeId = node.id
+        val payload: ByteArray? = null // oder "start".toByteArray()
+        Tasks.await(
+            Wearable.getMessageClient(context).sendMessage(
+                nodeId,
+                "/stress_request",
+                payload
+            )
+        )
+    }
+
+    }
