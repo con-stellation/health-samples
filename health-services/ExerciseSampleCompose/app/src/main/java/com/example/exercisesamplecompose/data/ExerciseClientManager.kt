@@ -20,6 +20,8 @@ import android.content.Context
 import android.content.Intent
 import androidx.concurrent.futures.await
 import android.net.Uri
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.util.Log
 import androidx.health.services.client.ExerciseClient
 import androidx.health.services.client.ExerciseUpdateCallback
@@ -59,6 +61,7 @@ import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.flow.callbackFlow
 import androidx.core.net.toUri
 import com.google.android.gms.tasks.Tasks
+import com.google.android.gms.wearable.MessageEvent
 
 /**
  * Entry point for [HealthServicesClient] APIs, wrapping them in coroutine-friendly APIs.
@@ -70,7 +73,8 @@ class ExerciseClientManager
 constructor(
     @ApplicationContext private val applicationContext: Context,
     healthServicesClient: HealthServicesClient,
-    private val logger: ExerciseLogger
+    private val logger: ExerciseLogger,
+    private val vibrator: Vibrator,
 ) {
     val exerciseClient: ExerciseClient = healthServicesClient.exerciseClient
 
@@ -92,6 +96,15 @@ constructor(
 
     suspend fun startExercise() {
         logger.log("Starting exercise")
+        // TODO place vibration somewhere else and with a different pattern. Is here simply for testing purposes
+        val timings: LongArray = longArrayOf(
+            50, 50, 50, 50, 50, 100, 350, 25, 25, 25, 25, 200)
+        val amplitudes: IntArray = intArrayOf(
+            33, 51, 75, 113, 170, 255, 0, 38, 62, 100, 160, 255)
+        val repeatIndex = -1 // Don't repeat.
+        vibrator.vibrate(
+            VibrationEffect.createWaveform(
+            timings, amplitudes, repeatIndex))
         val exec : Executor = Executors.newSingleThreadExecutor()
         val connectedNodes = Tasks.await(Wearable.getNodeClient(applicationContext).connectedNodes)
         if(!connectedNodes.isEmpty()){
@@ -270,6 +283,7 @@ constructor(
     private companion object {
         const val CALORIES_THRESHOLD = 250.0
     }
+
 }
 
 private fun logMetrics(metrics: DataPointContainer) {
