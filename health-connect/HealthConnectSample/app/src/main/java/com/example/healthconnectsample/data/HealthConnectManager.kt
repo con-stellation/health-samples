@@ -147,6 +147,7 @@ class HealthConnectManager(private val context: Context) {
             timeRangeFilter = TimeRangeFilter.between(start, end)
         )
         val response = healthConnectClient.readRecords(request)
+        calculateStress()
 //        val putDataReq : PutDataRequest = PutDataMapRequest.create("/exercise_session").run {
 //            dataMap.putString("Exercise ID", ""+response.records[0].metadata.id)
 //            asPutDataRequest()
