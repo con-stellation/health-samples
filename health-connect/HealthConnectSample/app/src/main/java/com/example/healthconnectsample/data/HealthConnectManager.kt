@@ -147,7 +147,7 @@ class HealthConnectManager(private val context: Context) {
             timeRangeFilter = TimeRangeFilter.between(start, end)
         )
         val response = healthConnectClient.readRecords(request)
-        calculateStress()
+
 //        val putDataReq : PutDataRequest = PutDataMapRequest.create("/exercise_session").run {
 //            dataMap.putString("Exercise ID", ""+response.records[0].metadata.id)
 //            asPutDataRequest()
@@ -524,12 +524,14 @@ class HealthConnectManager(private val context: Context) {
     }
 
     fun calculateStress(): Int {
+        Log.d("calculateStress", "calculateStress called")
         sendMessageToWatch()
         return 0
     }
 
     //effort to try and send stressmeasurement results to wear os app
     fun sendMessageToWatch() {
+        Log.d("sendMessageToWatch", "sendMessageToWatch called")
         val capabilityInfo: CapabilityInfo = Tasks.await(
             Wearable.getCapabilityClient(context)
                 .getCapability(

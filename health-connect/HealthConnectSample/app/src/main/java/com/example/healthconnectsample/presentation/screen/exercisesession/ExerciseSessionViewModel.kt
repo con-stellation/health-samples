@@ -130,6 +130,7 @@ class ExerciseSessionViewModel(private val healthConnectManager: HealthConnectMa
                     title = record.title
                 )
             }
+        healthConnectManager.calculateStress()
     }
 
     /**
