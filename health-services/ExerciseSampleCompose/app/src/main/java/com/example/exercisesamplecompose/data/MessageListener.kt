@@ -6,10 +6,13 @@ import com.google.android.gms.wearable.WearableListenerService
 
 class MessageListener: WearableListenerService() {
     override fun onMessageReceived(messageEvent: MessageEvent) {
+        val payload = messageEvent.data.toString()
         if (messageEvent.path == "/stress_request") {
-            val payload = messageEvent.data.toString()
-            Log.i("MessageListener", "Stress data received: $payload")
+            Log.i("onMessageReceived", "Stress data received: $payload")
             //TODO start calculations or update globally known data here so it can be used in HR measurement code
+        } else {
+            val path = messageEvent.path
+            Log.i("onMessageReceived", "Received data from another path $path with payload $payload")
         }
     }
 
