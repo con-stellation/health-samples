@@ -549,15 +549,22 @@ class HealthConnectManager(private val context: Context) {
             return
         }
         val nodeId = node.id
+
+        val connectedNodes = Tasks.await(Wearable.getNodeClient(context).connectedNodes)
         val payload: ByteArray? = "testing".toByteArray() // oder "start".toByteArray()
+
+        connectedNodes.forEach { node ->
+            Log.d("sendMessageToWatch", "Sending message to node: $node")
             Wearable.getMessageClient(context).sendMessage(
-                nodeId,
+                node.id,
                 "/stress_request",
                 payload
-        ).apply {
+            ).apply {
                 addOnSuccessListener { Log.i("sendMessage", "successfully sent message")}
                 addOnFailureListener { Log.i("sendMessage","failed to send messgage") }
             }
+        }
+
     }
 
     }
