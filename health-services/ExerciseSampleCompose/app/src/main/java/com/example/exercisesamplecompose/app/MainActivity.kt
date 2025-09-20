@@ -24,9 +24,12 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.fragment.app.FragmentActivity
 import androidx.navigation.NavHostController
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
+import com.example.exercisesamplecompose.data.MessageListener
 import com.example.exercisesamplecompose.presentation.ExerciseSampleApp
 import com.example.exercisesamplecompose.presentation.exercise.ExerciseViewModel
 import com.example.exercisesamplecompose.presentation.preparing.PreparingViewModel
+import com.google.android.gms.wearable.MessageClient
+import com.google.android.gms.wearable.Wearable
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -49,7 +52,8 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         val splash = installSplashScreen()
         var pendingNavigation = true
-
+        val msgListener = MessageListener()
+        Wearable.getMessageClient(this).addListener(msgListener)
         splash.setKeepOnScreenCondition { pendingNavigation }
 
         super.onCreate(savedInstanceState)
@@ -75,6 +79,7 @@ class MainActivity : FragmentActivity() {
     private suspend fun prepareIfNoExercise() {
         /** Check if we have an active exercise. If true, set our destination as the
          * Exercise Screen. If false, route to preparing a new exercise. **/
+
         val isRegularLaunch =
             navController.currentDestination?.route == Screen.Exercise.route
         if (isRegularLaunch && !exerciseViewModel.isExerciseInProgress()) {

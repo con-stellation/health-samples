@@ -1,11 +1,13 @@
 package com.example.exercisesamplecompose.data
 
 import android.util.Log
+import com.google.android.gms.wearable.MessageClient
 import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.WearableListenerService
 
-class MessageListener: WearableListenerService() {
+class MessageListener: MessageClient.OnMessageReceivedListener {
     override fun onMessageReceived(messageEvent: MessageEvent) {
+        Log.i("onMessageReceived", "Event received: $messageEvent on path: ${messageEvent.path}")
         val payload = messageEvent.data.toString()
         if (messageEvent.path == "/stress_request") {
             Log.i("onMessageReceived", "Stress data received: $payload")
