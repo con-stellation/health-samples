@@ -71,6 +71,7 @@ dependencies {
 
     // For Health Connect
     implementation "androidx.health.connect:connect-client:$health_connect_version"
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2' // Überprüfen Sie die neueste Version
 
     // Fix permissions issue until 1.1.0-alpha02
     implementation "androidx.core:core:1.13.1"

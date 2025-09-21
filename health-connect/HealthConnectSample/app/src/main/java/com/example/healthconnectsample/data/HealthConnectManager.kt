@@ -56,11 +56,13 @@ import com.google.android.gms.wearable.DataItem
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.PutDataRequest
 import com.google.android.gms.wearable.Wearable
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import java.io.IOException
 import java.io.InvalidObjectException
 import java.time.Instant
@@ -75,7 +77,7 @@ const val MIN_SUPPORTED_SDK = Build.VERSION_CODES.O_MR1
 /** Demonstrates reading and writing from Health Connect. */
 class HealthConnectManager(private val context: Context) {
     private val healthConnectClient by lazy { HealthConnectClient.getOrCreate(context) }
-    private lateinit var dataClient : DataClient
+    private val dataClient by lazy {Wearable.getDataClient(context) }
     val healthConnectCompatibleApps by lazy {
         val intent = Intent("androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE")
 
@@ -526,54 +528,29 @@ class HealthConnectManager(private val context: Context) {
         data class ChangeList(val changes: List<Change>) : ChangesMessage()
     }
 
-    fun calculateStress(): Int {
+    suspend fun calculateStress(): Int {
         Log.d("calculateStress", "calculateStress called")
         sendMessageToWatch()
         return 0
     }
 
-    //effort to try and send stressmeasurement results to wear os app
-    fun sendMessageToWatch() {
-        Log.d("sendMessageToWatch", "sendMessageToWatch called")
-//        val capabilityInfo: CapabilityInfo = Tasks.await(
-//            Wearable.getCapabilityClient(context)
-//                .getCapability(
-//                    "stress_measurement",
-//                    CapabilityClient.FILTER_REACHABLE
-//                )
-//        )
-//        val nodes = capabilityInfo.nodes
-//        val node = nodes.firstOrNull { it.isNearby } ?: nodes.firstOrNull()
-//        if (node == null) {
-//            Log.w(
-//                "WearableComms",
-//                "Kein erreichbares Gerät mit der Fähigkeit 'stress_measurement' gefunden."
-//            )
-//            return
-//        }
-//        val nodeId = node.id
-
-        CoroutineScope(Dispatchers.IO).launch {
-            val connectedNodes = Tasks.await(Wearable.getNodeClient(context).connectedNodes)
-
-        val payload: ByteArray? = "testing".toByteArray() // oder "start".toByteArray()
-
-        if(connectedNodes.isEmpty()){
-            Log.d("sendMessageToWatch", "No connected nodes")
-        }
-        connectedNodes.forEach { node ->
-            Log.d("sendMessageToWatch", "Sending message to node: $node")
-            Wearable.getMessageClient(context).sendMessage(
-                node.id,
-                "/stress_request",
-                payload
-            ).apply {
-                addOnSuccessListener { Log.i("sendMessage", "successfully sent message")}
-                addOnFailureListener { Log.i("sendMessage","failed to send messgage") }
+    private suspend fun sendMessageToWatch() {
+        try {
+            val request = PutDataMapRequest.create("/stress_score").apply {
+                dataMap.putInt("stress_score", 3)
             }
-        }
-        }
+                .asPutDataRequest()
+                .setUrgent()
 
+            val result = dataClient.putDataItem(request).await()
+
+            Log.d("sendMessageToWatch", "DataItem saved: $result")
+        } catch (cancellationException: CancellationException) {
+            throw cancellationException
+        } catch (exception: Exception) {
+            Log.d("sendMessageToWatch", "Saving DataItem failed: $exception")
+        }
     }
+    //effort to try and send stressmeasurement results to wear os app
 
     }
