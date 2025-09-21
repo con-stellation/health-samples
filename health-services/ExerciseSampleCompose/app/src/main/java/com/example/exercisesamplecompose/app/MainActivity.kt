@@ -24,7 +24,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.fragment.app.FragmentActivity
 import androidx.navigation.NavHostController
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
-import com.example.exercisesamplecompose.data.MessageListener
+import com.example.exercisesamplecompose.service.MessageListener
 import com.example.exercisesamplecompose.presentation.ExerciseSampleApp
 import com.example.exercisesamplecompose.presentation.exercise.ExerciseViewModel
 import com.example.exercisesamplecompose.presentation.preparing.PreparingViewModel
@@ -35,6 +35,7 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : FragmentActivity() {
     private lateinit var navController: NavHostController
+    private val dataClient by lazy { Wearable.getDataClient(this) }
     private val exerciseViewModel by viewModels<ExerciseViewModel>()
     private val preparingViewModel by viewModels<PreparingViewModel>()
 
@@ -52,8 +53,6 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         val splash = installSplashScreen()
         var pendingNavigation = true
-        val msgListener = MessageListener()
-        Wearable.getMessageClient(this).addListener(msgListener)
         splash.setKeepOnScreenCondition { pendingNavigation }
 
         super.onCreate(savedInstanceState)
