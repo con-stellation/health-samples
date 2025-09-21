@@ -16,6 +16,8 @@ roborazzi = "1.45.1"
 ksp = "2.1.21-2.0.1"
 hilt = "2.56.2"
 ktlint = "0.50.0"
+wear-remote-interactions = "1.1.0"
+play-services-wearable = "19.0.0"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
@@ -61,6 +63,8 @@ test-ext-junit = "androidx.test.ext:junit:1.2.1"
 wear-compose-foundation = { module = "androidx.wear.compose:compose-foundation", version.ref = "androidx-wear-compose" }
 wear-compose-material = { module = "androidx.wear.compose:compose-material3", version.ref = "androidx-wear-compose" }
 wear-ongoing-activity = "androidx.wear:wear-ongoing:1.0.0"
+androidx-wear-remote-interactions = { group = "androidx.wear", name = "wear-remote-interactions", version.ref = "wear-remote-interactions" }
+play-services-wearable = { group = "com.google.android.gms", name = "play-services-wearable", version.ref = "play-services-wearable" }
 
 [plugins]
 com-android-application = { id = "com.android.application", version.ref = "android-gradle-plugin" }

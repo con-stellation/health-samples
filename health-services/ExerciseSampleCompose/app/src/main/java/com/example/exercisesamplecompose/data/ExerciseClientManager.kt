@@ -98,7 +98,7 @@ constructor(
         if(!connectedNodes.isEmpty()){
             val remoteActivityHelper = RemoteActivityHelper(applicationContext, exec)
             val remoteResult = remoteActivityHelper.startRemoteActivity(
-                Intent(Intent.ACTION_VIEW).addCategory(Intent.CATEGORY_BROWSABLE).setData(Uri.parse("companionapp://sms92")),
+                Intent(Intent.ACTION_VIEW).addCategory(Intent.CATEGORY_BROWSABLE).setData("companionapp://sms92".toUri()),
                 connectedNodes[0].id
             ).await()
 
