@@ -9,9 +9,10 @@ import com.google.android.gms.wearable.DataEventBuffer
 import com.google.android.gms.wearable.MessageClient
 import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.Wearable
+import com.google.android.gms.wearable.WearableListenerService
 import java.lang.String
 
-class MessageListener: Service(), DataClient.OnDataChangedListener {
+class MessageListener: WearableListenerService(), DataClient.OnDataChangedListener {
     private lateinit var dataClient: DataClient
 
     override fun onCreate() {
@@ -28,10 +29,6 @@ class MessageListener: Service(), DataClient.OnDataChangedListener {
             Log.i("onMessageReceived", "Data update received with data: ${String(event.dataItem.data)}")
         }
         p0.release()
-    }
-
-    override fun onBind(p0: Intent?): IBinder? {
-        TODO("Not yet implemented")
     }
 
     override fun onDestroy() {
