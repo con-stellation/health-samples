@@ -365,26 +365,6 @@ class HealthConnectManager(private val context: Context) {
     }
 
     /**
-     * Writes [WeightRecord] to Health Connect.
-     */
-    suspend fun writeWeightInput(weight: WeightRecord) {
-        val records = listOf(weight)
-        healthConnectClient.insertRecords(records)
-    }
-
-    /**
-     * Reads in existing [WeightRecord]s.
-     */
-    suspend fun readWeightInputs(start: Instant, end: Instant): List<WeightRecord> {
-        val request = ReadRecordsRequest(
-            recordType = WeightRecord::class,
-            timeRangeFilter = TimeRangeFilter.between(start, end)
-        )
-        val response = healthConnectClient.readRecords(request)
-        return response.records
-    }
-
-    /**
      * Returns the weekly average of [WeightRecord]s.
      */
     suspend fun computeWeeklyAverage(start: Instant, end: Instant): Mass? {
@@ -396,16 +376,6 @@ class HealthConnectManager(private val context: Context) {
         return response[WeightRecord.WEIGHT_AVG]
     }
 
-    /**
-     * Deletes a [WeightRecord]s.
-     */
-    suspend fun deleteWeightInput(uid: String) {
-        healthConnectClient.deleteRecords(
-            WeightRecord::class,
-            recordIdsList = listOf(uid),
-            clientRecordIdsList = emptyList()
-        )
-    }
 
     /**
      * Obtains a changes token for the specified record types.
