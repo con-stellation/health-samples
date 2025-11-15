@@ -71,6 +71,8 @@ fun HealthConnectNavigation(
                     healthConnectManager.checkAvailability()
                 }
             )
+            val exerciseSessionViewModel = ExerciseSessionViewModel(healthConnectManager)
+            exerciseSessionViewModel.initialLoad()
         }
         composable(
             route = Screen.PrivacyPolicy.route,

@@ -50,7 +50,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <category android:name="android.intent.category.LAUNCHER" />
                 <category android:name="android.intent.category.DEFAULT" />
-                <data android:scheme="companionapp" android:host="sms92"/>
+                <data android:scheme="companionapp" android:host="sms92" />
             </intent-filter>
 
             <!--

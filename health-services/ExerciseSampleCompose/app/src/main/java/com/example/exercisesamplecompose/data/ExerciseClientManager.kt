@@ -283,7 +283,6 @@ constructor(
     private companion object {
         const val CALORIES_THRESHOLD = 250.0
     }
-
 }
 
 private fun logMetrics(metrics: DataPointContainer) {

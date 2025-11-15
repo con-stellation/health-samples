@@ -20,6 +20,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Resources.NotFoundException
 import android.os.Build
+import android.util.Log
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.compose.runtime.mutableStateOf
 import androidx.health.connect.client.HealthConnectClient
@@ -46,8 +47,22 @@ import androidx.health.connect.client.units.Energy
 import androidx.health.connect.client.units.Length
 import androidx.health.connect.client.units.Mass
 import com.example.healthconnectsample.R
+import com.google.android.gms.tasks.Task
+import com.google.android.gms.tasks.Tasks
+import com.google.android.gms.wearable.CapabilityClient
+import com.google.android.gms.wearable.CapabilityInfo
+import com.google.android.gms.wearable.DataClient
+import com.google.android.gms.wearable.DataItem
+import com.google.android.gms.wearable.PutDataMapRequest
+import com.google.android.gms.wearable.PutDataRequest
+import com.google.android.gms.wearable.Wearable
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import java.io.IOException
 import java.io.InvalidObjectException
 import java.time.Instant
@@ -62,7 +77,7 @@ const val MIN_SUPPORTED_SDK = Build.VERSION_CODES.O_MR1
 /** Demonstrates reading and writing from Health Connect. */
 class HealthConnectManager(private val context: Context) {
     private val healthConnectClient by lazy { HealthConnectClient.getOrCreate(context) }
-
+    private val dataClient by lazy {Wearable.getDataClient(context) }
     val healthConnectCompatibleApps by lazy {
         val intent = Intent("androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE")
 
@@ -137,6 +152,14 @@ class HealthConnectManager(private val context: Context) {
             timeRangeFilter = TimeRangeFilter.between(start, end)
         )
         val response = healthConnectClient.readRecords(request)
+
+//        val putDataReq : PutDataRequest = PutDataMapRequest.create("/exercise_session").run {
+//            dataMap.putString("Exercise ID", ""+response.records[0].metadata.id)
+//            asPutDataRequest()
+//        }.setUrgent()
+//
+//        val putDataTask: Task<DataItem> = dataClient.putDataItem(putDataReq)
+        Log.i("HealthConnectManager", "readExerciseSessions: ${response.records}")
         return response.records
     }
 
@@ -504,4 +527,30 @@ class HealthConnectManager(private val context: Context) {
 
         data class ChangeList(val changes: List<Change>) : ChangesMessage()
     }
-}
+
+    suspend fun calculateStress(): Int {
+        Log.d("calculateStress", "calculateStress called")
+        sendMessageToWatch()
+        return 0
+    }
+
+    private suspend fun sendMessageToWatch() {
+        try {
+            val request = PutDataMapRequest.create("/stress_score").apply {
+                dataMap.putInt("stress_score", 3)
+            }
+                .asPutDataRequest()
+                .setUrgent()
+
+            val result = dataClient.putDataItem(request).await()
+
+            Log.d("sendMessageToWatch", "DataItem saved: $result")
+        } catch (cancellationException: CancellationException) {
+            throw cancellationException
+        } catch (exception: Exception) {
+            Log.d("sendMessageToWatch", "Saving DataItem failed: $exception")
+        }
+    }
+    //effort to try and send stressmeasurement results to wear os app
+
+    }
