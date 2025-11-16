@@ -28,6 +28,8 @@ import androidx.navigation.navDeepLink
 import com.example.healthconnectsample.data.HealthConnectManager
 import com.example.healthconnectsample.presentation.screen.SettingsScreen
 import com.example.healthconnectsample.presentation.screen.WelcomeScreen
+import com.example.healthconnectsample.presentation.screen.WelcomeScreenViewModel
+import com.example.healthconnectsample.presentation.screen.WelcomeScreenViewModelFactory
 import com.example.healthconnectsample.presentation.screen.changes.DifferentialChangesScreen
 import com.example.healthconnectsample.presentation.screen.changes.DifferentialChangesViewModel
 import com.example.healthconnectsample.presentation.screen.changes.DifferentialChangesViewModelFactory
@@ -62,11 +64,26 @@ fun HealthConnectNavigation(
     NavHost(navController = navController, startDestination = Screen.WelcomeScreen.route) {
         val availability by healthConnectManager.availability
         composable(Screen.WelcomeScreen.route) {
+
+            val viewModel: WelcomeScreenViewModel = viewModel(
+                factory = WelcomeScreenViewModelFactory(
+                    healthConnectManager = healthConnectManager
+                )
+            )
+            val permissionsGranted by viewModel.permissionsGranted
+            val permissions = viewModel.permissions
+            val onPermissionsResult = {viewModel.initialLoad()}
+            val permissionsLauncher =
+                rememberLauncherForActivityResult(viewModel.permissionsLauncher) {
+                    onPermissionsResult()}
             WelcomeScreen(
                 healthConnectAvailability = availability,
                 onResumeAvailabilityCheck = {
-                    healthConnectManager.checkAvailability()
-                }
+                    healthConnectManager.checkAvailability()},
+                permissionsGranted = permissionsGranted,
+                permissions = permissions,
+                onPermissionsLaunch = { values ->
+                    permissionsLauncher.launch(values)}
             )
             val exerciseSessionViewModel = ExerciseSessionViewModel(healthConnectManager)
             exerciseSessionViewModel.initialLoad()

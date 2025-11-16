@@ -27,6 +27,7 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
@@ -38,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.health.connect.client.HealthConnectClient.Companion.SDK_AVAILABLE
 import androidx.health.connect.client.HealthConnectClient.Companion.SDK_UNAVAILABLE
 import androidx.health.connect.client.HealthConnectClient.Companion.SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED
+import androidx.health.connect.client.permission.HealthPermission
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
@@ -47,6 +49,7 @@ import com.example.healthconnectsample.presentation.component.InstalledMessage
 import com.example.healthconnectsample.presentation.component.NotInstalledMessage
 import com.example.healthconnectsample.presentation.component.NotSupportedMessage
 import com.example.healthconnectsample.presentation.theme.HealthConnectTheme
+import java.security.Permissions
 
 /**
  * Welcome screen shown when the app is first launched.
@@ -55,6 +58,9 @@ import com.example.healthconnectsample.presentation.theme.HealthConnectTheme
 fun WelcomeScreen(
     healthConnectAvailability: Int,
     onResumeAvailabilityCheck: () -> Unit,
+    onPermissionsLaunch: (Set<String>) -> Unit, // Hinzufügen: Callback zum Starten des Launchers
+    permissionsGranted: Boolean,
+    permissions: Set<String>,
     lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current
 ) {
     val currentOnAvailabilityCheck by rememberUpdatedState(onResumeAvailabilityCheck)
@@ -64,6 +70,7 @@ fun WelcomeScreen(
     // followed the onboarding flow, then when the app is resumed, instead of showing the message
     // to ask the user to install Health Connect, the app recognises that Health Connect is now
     // available and shows the appropriate welcome.
+
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
@@ -77,6 +84,14 @@ fun WelcomeScreen(
         // When the effect leaves the Composition, remove the observer
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    LaunchedEffect(healthConnectAvailability) {
+        if(healthConnectAvailability == SDK_AVAILABLE){
+            if (!permissionsGranted) {
+                onPermissionsLaunch(permissions)
+            }
         }
     }
 
@@ -112,7 +127,10 @@ fun InstalledMessagePreview() {
     HealthConnectTheme {
         WelcomeScreen(
             healthConnectAvailability = SDK_AVAILABLE,
-            onResumeAvailabilityCheck = {}
+            onResumeAvailabilityCheck = {},
+            onPermissionsLaunch = {},
+            permissionsGranted = false,
+            permissions = setOf()
         )
     }
 }
@@ -123,7 +141,10 @@ fun NotInstalledMessagePreview() {
     HealthConnectTheme {
         WelcomeScreen(
             healthConnectAvailability = SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED,
-            onResumeAvailabilityCheck = {}
+            onResumeAvailabilityCheck = {},
+            onPermissionsLaunch = {},
+            permissionsGranted = false,
+            permissions = setOf()
         )
     }
 }
@@ -134,7 +155,10 @@ fun NotSupportedMessagePreview() {
     HealthConnectTheme {
         WelcomeScreen(
             healthConnectAvailability = SDK_UNAVAILABLE,
-            onResumeAvailabilityCheck = {}
+            onResumeAvailabilityCheck = {},
+            onPermissionsLaunch = {},
+            permissionsGranted = false,
+            permissions = setOf()
         )
     }
 }

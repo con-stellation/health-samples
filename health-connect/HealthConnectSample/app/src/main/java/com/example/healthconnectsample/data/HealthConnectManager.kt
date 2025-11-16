@@ -28,6 +28,7 @@ import androidx.health.connect.client.HealthConnectClient.Companion.SDK_UNAVAILA
 import androidx.health.connect.client.HealthConnectFeatures
 import androidx.health.connect.client.PermissionController
 import androidx.health.connect.client.changes.Change
+import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.DistanceRecord
 import androidx.health.connect.client.records.ExerciseSessionRecord
 import androidx.health.connect.client.records.HeartRateRecord
@@ -76,7 +77,23 @@ const val MIN_SUPPORTED_SDK = Build.VERSION_CODES.O_MR1
 /** Demonstrates reading and writing from Health Connect. */
 class HealthConnectManager(private val context: Context) {
     private val healthConnectClient by lazy { HealthConnectClient.getOrCreate(context) }
+    private val changesDataTypes = setOf(
+        ExerciseSessionRecord::class,
+        StepsRecord::class,
+        SpeedRecord::class,
+        DistanceRecord::class,
+        TotalCaloriesBurnedRecord::class,
+        HeartRateRecord::class,
+        SleepSessionRecord::class
+    )
     private val dataClient by lazy {Wearable.getDataClient(context) }
+
+    var permissionsGranted = mutableStateOf(false)
+        private set
+
+    val permissions = changesDataTypes.map { HealthPermission.getReadPermission(it) }.toSet()
+
+    val permissionsLauncher = requestPermissionsActivityContract()
     val healthConnectCompatibleApps by lazy {
         val intent = Intent("androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE")
 
