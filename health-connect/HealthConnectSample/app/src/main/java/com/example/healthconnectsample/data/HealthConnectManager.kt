@@ -36,7 +36,6 @@ import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.health.connect.client.records.SpeedRecord
 import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.records.TotalCaloriesBurnedRecord
-import androidx.health.connect.client.records.WeightRecord
 import androidx.health.connect.client.records.metadata.Metadata
 import androidx.health.connect.client.request.AggregateRequest
 import androidx.health.connect.client.request.ChangesTokenRequest
@@ -367,14 +366,14 @@ class HealthConnectManager(private val context: Context) {
     /**
      * Returns the weekly average of [WeightRecord]s.
      */
-    suspend fun computeWeeklyAverage(start: Instant, end: Instant): Mass? {
-        val request = AggregateRequest(
-            metrics = setOf(WeightRecord.WEIGHT_AVG),
-            timeRangeFilter = TimeRangeFilter.between(start, end)
-        )
-        val response = healthConnectClient.aggregate(request)
-        return response[WeightRecord.WEIGHT_AVG]
-    }
+//    suspend fun computeWeeklyAverage(start: Instant, end: Instant): Mass? {
+//        val request = AggregateRequest(
+//            metrics = setOf(WeightRecord.WEIGHT_AVG),
+//            timeRangeFilter = TimeRangeFilter.between(start, end)
+//        )
+//        val response = healthConnectClient.aggregate(request)
+//        return response[WeightRecord.WEIGHT_AVG]
+//    }
 
 
     /**

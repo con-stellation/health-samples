@@ -103,14 +103,11 @@
     <string name="sleep_stages">Sleep stages:</string>
 
     <!-- Input Readings detail screen -->
-    <string name="input_readings">Record weight</string>
     <string name="delete_button_readings">Delete</string>
-    <string name="weight_input">New Record (Kg)</string>
     <string name="add_readings_button">Add</string>
     <string name="previous_readings"> Previous Measurements </string>
     <string name="weekly_avg"> Weekly Average </string>
     <string name="kilograms">Kg</string>
-    <string name="valid_weight_error_message"> Weight must be between 0 and 1000</string>
 
     <!-- Differential changes screen -->
     <string name="differential_changes_title_text">Enabling differential change tracking obtains a token that can be used later for obtaining any subsequent changes</string>
@@ -130,7 +127,6 @@
     <string name="differential_changes_type_sleep_session">Sleep session</string>
     <string name="differential_changes_type_sleep_stage">Sleep stage</string>
     <string name="differential_changes_type_distance">Distance</string>
-    <string name="differential_changes_type_weight">Weight</string>
 
     <!-- Record List screen -->
     <string name="record_list">Record list</string>

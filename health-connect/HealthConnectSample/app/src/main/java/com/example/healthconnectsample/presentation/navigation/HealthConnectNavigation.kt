@@ -37,9 +37,6 @@ import com.example.healthconnectsample.presentation.screen.exercisesession.Exerc
 import com.example.healthconnectsample.presentation.screen.exercisesessiondetail.ExerciseSessionDetailScreen
 import com.example.healthconnectsample.presentation.screen.exercisesessiondetail.ExerciseSessionDetailViewModel
 import com.example.healthconnectsample.presentation.screen.exercisesessiondetail.ExerciseSessionDetailViewModelFactory
-import com.example.healthconnectsample.presentation.screen.inputreadings.InputReadingsScreen
-import com.example.healthconnectsample.presentation.screen.inputreadings.InputReadingsViewModel
-import com.example.healthconnectsample.presentation.screen.inputreadings.InputReadingsViewModelFactory
 import com.example.healthconnectsample.presentation.screen.privacypolicy.PrivacyPolicyScreen
 import com.example.healthconnectsample.presentation.screen.recordlist.RecordType
 import com.example.healthconnectsample.presentation.screen.recordlist.RecordListScreen
@@ -216,43 +213,6 @@ fun HealthConnectNavigation(
                 onInsertClick = {
                     viewModel.generateSleepData()
                 },
-                onError = { exception ->
-                    showExceptionSnackbar(scaffoldState, scope, exception)
-                },
-                onPermissionsResult = {
-                    viewModel.initialLoad()
-                },
-                onPermissionsLaunch = { values ->
-                    permissionsLauncher.launch(values)}
-            )
-        }
-        composable(Screen.InputReadings.route) {
-            val viewModel: InputReadingsViewModel = viewModel(
-                factory = InputReadingsViewModelFactory(
-                    healthConnectManager = healthConnectManager
-                )
-            )
-            val permissionsGranted by viewModel.permissionsGranted
-            val readingsList by viewModel.readingsList
-            val permissions = viewModel.permissions
-            val weeklyAvg by viewModel.weeklyAvg
-            val onPermissionsResult = {viewModel.initialLoad()}
-            val permissionsLauncher =
-                rememberLauncherForActivityResult(viewModel.permissionsLauncher) {
-                onPermissionsResult()}
-            InputReadingsScreen(
-                permissionsGranted = permissionsGranted,
-                permissions = permissions,
-
-                uiState = viewModel.uiState,
-                onInsertClick = { weightInput ->
-                    viewModel.inputReadings(weightInput)
-                },
-                weeklyAvg = weeklyAvg,
-                onDeleteClick = { uid ->
-                    viewModel.deleteWeightInput(uid)
-                },
-                readingsList = readingsList,
                 onError = { exception ->
                     showExceptionSnackbar(scaffoldState, scope, exception)
                 },

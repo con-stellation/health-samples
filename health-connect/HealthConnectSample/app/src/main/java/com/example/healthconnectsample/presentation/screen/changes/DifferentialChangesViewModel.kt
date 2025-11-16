@@ -32,7 +32,6 @@ import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.health.connect.client.records.SpeedRecord
 import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.records.TotalCaloriesBurnedRecord
-import androidx.health.connect.client.records.WeightRecord
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -51,8 +50,7 @@ class DifferentialChangesViewModel(private val healthConnectManager: HealthConne
         DistanceRecord::class,
         TotalCaloriesBurnedRecord::class,
         HeartRateRecord::class,
-        SleepSessionRecord::class,
-        WeightRecord::class
+        SleepSessionRecord::class
     )
 
     val permissions = changesDataTypes.map { HealthPermission.getReadPermission(it) }.toSet()
