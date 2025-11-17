@@ -58,7 +58,7 @@ import java.security.Permissions
 fun WelcomeScreen(
     healthConnectAvailability: Int,
     onResumeAvailabilityCheck: () -> Unit,
-    onPermissionsLaunch: (Set<String>) -> Unit, // Hinzufügen: Callback zum Starten des Launchers
+    onPermissionsLaunch: (Set<String>) -> Unit,
     permissionsGranted: Boolean,
     permissions: Set<String>,
     lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current

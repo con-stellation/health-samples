@@ -11,6 +11,8 @@ import androidx.health.connect.client.permission.HealthPermission.Companion.PERM
 import androidx.health.connect.client.records.DistanceRecord
 import androidx.health.connect.client.records.ExerciseSessionRecord
 import androidx.health.connect.client.records.HeartRateRecord
+import androidx.health.connect.client.records.HeartRateVariabilityRmssdRecord
+import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.health.connect.client.records.SpeedRecord
 import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.records.TotalCaloriesBurnedRecord
@@ -23,6 +25,7 @@ import com.example.healthconnectsample.presentation.screen.exercisesession.Exerc
 import kotlinx.coroutines.launch
 import java.io.IOException
 import java.util.UUID
+import kotlin.collections.setOf
 
 class WelcomeScreenViewModel (val healthConnectManager: HealthConnectManager) :
     ViewModel() {
@@ -31,19 +34,22 @@ class WelcomeScreenViewModel (val healthConnectManager: HealthConnectManager) :
         HealthPermission.getWritePermission(ExerciseSessionRecord::class),
         HealthPermission.getReadPermission(ExerciseSessionRecord::class),
         HealthPermission.getWritePermission(StepsRecord::class),
+        HealthPermission.getReadPermission(StepsRecord::class),
         HealthPermission.getWritePermission(SpeedRecord::class),
+        HealthPermission.getReadPermission(SpeedRecord::class),
         HealthPermission.getWritePermission(DistanceRecord::class),
+        HealthPermission.getReadPermission(DistanceRecord::class),
+        HealthPermission.getWritePermission(HeartRateRecord::class),
+        HealthPermission.getReadPermission(HeartRateRecord::class),
+        HealthPermission.getReadPermission(SleepSessionRecord::class),
+        HealthPermission.getWritePermission(SleepSessionRecord::class),
+        HealthPermission.getReadPermission(HeartRateVariabilityRmssdRecord::class),
+        HealthPermission.getWritePermission(HeartRateVariabilityRmssdRecord::class),
         HealthPermission.getWritePermission(TotalCaloriesBurnedRecord::class),
-        HealthPermission.getWritePermission(HeartRateRecord::class)
+        PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND
     )
 
     var permissionsGranted = mutableStateOf(false)
-        private set
-
-    var backgroundReadAvailable = mutableStateOf(false)
-        private set
-
-    var backgroundReadGranted = mutableStateOf(false)
         private set
 
     var uiState: UiState by mutableStateOf(UiState.Uninitialized)
