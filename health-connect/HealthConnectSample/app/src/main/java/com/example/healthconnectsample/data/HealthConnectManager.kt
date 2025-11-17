@@ -32,6 +32,7 @@ import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.DistanceRecord
 import androidx.health.connect.client.records.ExerciseSessionRecord
 import androidx.health.connect.client.records.HeartRateRecord
+import androidx.health.connect.client.records.HeartRateVariabilityRmssdRecord
 import androidx.health.connect.client.records.Record
 import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.health.connect.client.records.SpeedRecord
@@ -176,6 +177,29 @@ class HealthConnectManager(private val context: Context) {
 //
 //        val putDataTask: Task<DataItem> = dataClient.putDataItem(putDataReq)
         Log.i("HealthConnectManager", "readExerciseSessions: ${response.records}")
+        return response.records
+    }
+
+    suspend fun readHRV(): List<HeartRateVariabilityRmssdRecord> {
+        val end = ZonedDateTime.now().truncatedTo(ChronoUnit.DAYS)
+            .minusDays(1)
+            .withHour(12)
+        val start = end
+            .minusDays(7)
+
+        val request = ReadRecordsRequest(
+            recordType = HeartRateVariabilityRmssdRecord::class,
+            timeRangeFilter = TimeRangeFilter.between(start.toInstant(), end.toInstant())
+        )
+        val response = healthConnectClient.readRecords(request)
+
+//        val putDataReq : PutDataRequest = PutDataMapRequest.create("/exercise_session").run {
+//            dataMap.putString("Exercise ID", ""+response.records[0].metadata.id)
+//            asPutDataRequest()
+//        }.setUrgent()
+//
+//        val putDataTask: Task<DataItem> = dataClient.putDataItem(putDataReq)
+        Log.i("HealthConnectManager", "readHRV: ${response.records}")
         return response.records
     }
 

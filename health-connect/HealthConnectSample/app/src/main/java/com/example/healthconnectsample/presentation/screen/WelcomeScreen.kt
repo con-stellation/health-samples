@@ -15,6 +15,7 @@
  */
 package com.example.healthconnectsample.presentation.screen
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -39,17 +40,17 @@ import androidx.compose.ui.unit.dp
 import androidx.health.connect.client.HealthConnectClient.Companion.SDK_AVAILABLE
 import androidx.health.connect.client.HealthConnectClient.Companion.SDK_UNAVAILABLE
 import androidx.health.connect.client.HealthConnectClient.Companion.SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED
-import androidx.health.connect.client.permission.HealthPermission
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.healthconnectsample.R
+import com.example.healthconnectsample.data.HealthDataCenter
 import com.example.healthconnectsample.presentation.component.InstalledMessage
 import com.example.healthconnectsample.presentation.component.NotInstalledMessage
 import com.example.healthconnectsample.presentation.component.NotSupportedMessage
+import com.example.healthconnectsample.presentation.screen.exercisesession.ExerciseSessionViewModel
 import com.example.healthconnectsample.presentation.theme.HealthConnectTheme
-import java.security.Permissions
 
 /**
  * Welcome screen shown when the app is first launched.
@@ -88,8 +89,10 @@ fun WelcomeScreen(
     }
 
     LaunchedEffect(healthConnectAvailability) {
+        Log.d("WelcomeScreen", "LaunchedEffect, permissionsgranted? $permissionsGranted")
         if(healthConnectAvailability == SDK_AVAILABLE){
             if (!permissionsGranted) {
+                Log.d("WelcomeScreen", "onPermissionsLaunch")
                 onPermissionsLaunch(permissions)
             }
         }
@@ -130,8 +133,7 @@ fun InstalledMessagePreview() {
             onResumeAvailabilityCheck = {},
             onPermissionsLaunch = {},
             permissionsGranted = false,
-            permissions = setOf()
-        )
+            permissions = setOf())
     }
 }
 
@@ -144,8 +146,8 @@ fun NotInstalledMessagePreview() {
             onResumeAvailabilityCheck = {},
             onPermissionsLaunch = {},
             permissionsGranted = false,
-            permissions = setOf()
-        )
+            permissions = setOf())
+
     }
 }
 

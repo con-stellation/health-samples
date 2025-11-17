@@ -1,11 +1,9 @@
 package com.example.healthconnectsample.presentation.screen
 
-import android.os.RemoteException
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.health.connect.client.HealthConnectFeatures
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.permission.HealthPermission.Companion.PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND
 import androidx.health.connect.client.records.DistanceRecord
@@ -20,14 +18,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.healthconnectsample.data.HealthConnectManager
+import com.example.healthconnectsample.data.HealthDataCenter
 import com.example.healthconnectsample.presentation.screen.exercisesession.ExerciseSessionViewModel
 import com.example.healthconnectsample.presentation.screen.exercisesession.ExerciseSessionViewModel.UiState
 import kotlinx.coroutines.launch
-import java.io.IOException
-import java.util.UUID
 import kotlin.collections.setOf
 
-class WelcomeScreenViewModel (val healthConnectManager: HealthConnectManager) :
+class WelcomeScreenViewModel (
+    val healthConnectManager: HealthConnectManager,
+    val exerciseSessionVM: ExerciseSessionViewModel,
+    val healthDataCenter: HealthDataCenter
+) :
     ViewModel() {
 
     val permissions = setOf(
@@ -68,7 +69,9 @@ class WelcomeScreenViewModel (val healthConnectManager: HealthConnectManager) :
                 // Wir müssen dem UI nichts weiter mitteilen, da die Activity das Ergebnis
                 // des Launchers abfängt und die Navigation entsprechend steuert.
             } else {
+
                 Log.d("WelcomeViewModel", "All permissions are already granted.")
+                healthDataCenter.fetchHealthData(exerciseSessionVM)
             }
         }
     }
@@ -76,13 +79,17 @@ class WelcomeScreenViewModel (val healthConnectManager: HealthConnectManager) :
 }
 
 class WelcomeScreenViewModelFactory(
-    private val healthConnectManager: HealthConnectManager
+    private val healthConnectManager: HealthConnectManager,
+    private val exerciseSessionVM: ExerciseSessionViewModel,
+    private val healthDataCenter: HealthDataCenter
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(WelcomeScreenViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
             return WelcomeScreenViewModel(
-                healthConnectManager = healthConnectManager
+                healthConnectManager = healthConnectManager,
+                exerciseSessionVM = exerciseSessionVM,
+                healthDataCenter = healthDataCenter
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")

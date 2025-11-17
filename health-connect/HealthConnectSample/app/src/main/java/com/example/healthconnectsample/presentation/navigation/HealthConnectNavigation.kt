@@ -26,6 +26,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navDeepLink
 import com.example.healthconnectsample.data.HealthConnectManager
+import com.example.healthconnectsample.data.HealthDataCenter
 import com.example.healthconnectsample.presentation.screen.SettingsScreen
 import com.example.healthconnectsample.presentation.screen.WelcomeScreen
 import com.example.healthconnectsample.presentation.screen.WelcomeScreenViewModel
@@ -65,11 +66,21 @@ fun HealthConnectNavigation(
         val availability by healthConnectManager.availability
         composable(Screen.WelcomeScreen.route) {
 
-            val viewModel: WelcomeScreenViewModel = viewModel(
-                factory = WelcomeScreenViewModelFactory(
+            val exerciseSessionVM: ExerciseSessionViewModel = viewModel(
+                factory = ExerciseSessionViewModelFactory(
                     healthConnectManager = healthConnectManager
                 )
             )
+
+            val healthDataCenter = HealthDataCenter(healthConnectManager)
+            val viewModel: WelcomeScreenViewModel = viewModel(
+                factory = WelcomeScreenViewModelFactory(
+                    healthConnectManager = healthConnectManager,
+                    exerciseSessionVM = exerciseSessionVM,
+                    healthDataCenter =  healthDataCenter
+                )
+            )
+
             val permissionsGranted by viewModel.permissionsGranted
             val permissions = viewModel.permissions
             val onPermissionsResult = {viewModel.initialLoad()}
@@ -80,13 +91,12 @@ fun HealthConnectNavigation(
                 healthConnectAvailability = availability,
                 onResumeAvailabilityCheck = {
                     healthConnectManager.checkAvailability()},
-                permissionsGranted = permissionsGranted,
-                permissions = permissions,
                 onPermissionsLaunch = { values ->
-                    permissionsLauncher.launch(values)}
+                    permissionsLauncher.launch(values)},
+                permissionsGranted = permissionsGranted,
+                permissions = permissions
             )
-            val exerciseSessionViewModel = ExerciseSessionViewModel(healthConnectManager)
-            exerciseSessionViewModel.initialLoad()
+
         }
         composable(
             route = Screen.PrivacyPolicy.route,
