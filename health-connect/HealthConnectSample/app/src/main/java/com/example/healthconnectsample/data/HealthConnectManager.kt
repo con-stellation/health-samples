@@ -46,29 +46,19 @@ import androidx.health.connect.client.response.InsertRecordsResponse
 import androidx.health.connect.client.time.TimeRangeFilter
 import androidx.health.connect.client.units.Energy
 import androidx.health.connect.client.units.Length
-import androidx.health.connect.client.units.Mass
 import com.example.healthconnectsample.R
-import com.google.android.gms.tasks.Task
-import com.google.android.gms.tasks.Tasks
-import com.google.android.gms.wearable.CapabilityClient
-import com.google.android.gms.wearable.CapabilityInfo
-import com.google.android.gms.wearable.DataClient
-import com.google.android.gms.wearable.DataItem
 import com.google.android.gms.wearable.PutDataMapRequest
-import com.google.android.gms.wearable.PutDataRequest
 import com.google.android.gms.wearable.Wearable
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.io.IOException
 import java.io.InvalidObjectException
 import java.time.Instant
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
+import kotlin.math.pow
 import kotlin.random.Random
 import kotlin.reflect.KClass
 
@@ -78,6 +68,8 @@ const val MIN_SUPPORTED_SDK = Build.VERSION_CODES.O_MR1
 /** Demonstrates reading and writing from Health Connect. */
 class HealthConnectManager(private val context: Context) {
     private val healthConnectClient by lazy { HealthConnectClient.getOrCreate(context) }
+
+    val OPTIMAL_SLEEP_DURATION = 8
     private val changesDataTypes = setOf(
         ExerciseSessionRecord::class,
         StepsRecord::class,
@@ -181,9 +173,8 @@ class HealthConnectManager(private val context: Context) {
     }
 
     suspend fun readHRV(): List<HeartRateVariabilityRmssdRecord> {
+        // TODO hier Average über die Woche berechnen und mit altem Wert vergleichen?
         val end = ZonedDateTime.now().truncatedTo(ChronoUnit.DAYS)
-            .minusDays(1)
-            .withHour(12)
         val start = end
             .minusDays(7)
 
@@ -538,13 +529,67 @@ class HealthConnectManager(private val context: Context) {
         data class ChangeList(val changes: List<Change>) : ChangesMessage()
     }
 
-    suspend fun calculateStress(): Int {
+    suspend fun calculateStress(
+        hrv: List<HeartRateVariabilityRmssdRecord>,
+        sleep: List<SleepSessionData>
+    ): Int {
         Log.d("calculateStress", "calculateStress called")
-        sendMessageToWatch()
+        calculateSleepIndex(sleep)
+        sendMessageToWatch(hrv)
         return 0
     }
 
-    private suspend fun sendMessageToWatch() {
+    fun calculateSleepIndex(sleep: List<SleepSessionData>): Int {
+        if(sleep.isNotEmpty()) {
+            val totalSleepDuration = sleep[0].duration?.toMinutes()?.toDouble() // hier fehlt noch die sleepduration die später in der rechnung verwendet werden soll (also durch 8 dividierter Wert)
+            val optimalDepth = totalSleepDuration?.times(0.45) ?: 0.0
+
+            val duration = sleep[0].duration?.toMinutes()?.toDouble()?.div(8)
+            var deepSleep = 0.0
+            var remSleep = 0.0
+
+            sleep[0].stages.forEach{ stage ->
+                val stageDuration = stage.endTime.epochSecond - stage.startTime.epochSecond
+                when(stage.stage) {
+                    SleepSessionRecord.STAGE_TYPE_DEEP -> deepSleep += stageDuration
+                    SleepSessionRecord.STAGE_TYPE_REM -> remSleep += stageDuration
+                }
+            }
+
+            val depth = (deepSleep+remSleep)/optimalDepth
+
+            Log.d("calculateSleepIndex", "duration: $duration, depth: $depth")
+
+        }
+
+        val OPTIMAL_SLEEP_REGULARITY = calculateOptimalSleepRegularity(sleep)
+        val index = (duration?.multipliedBy(4)?.dividedBy(10)?.plus(depth*0.25) + regularity*0.2 + interruptions*0.1 + timeUntilAsleep*0.05)/100
+        return index*100
+    }
+
+    private fun calculateOptimalSleepRegularity(sleep: List<SleepSessionData>): Double {
+        val startTimeInSeconds = sleep.map { data -> data.startTime.epochSecond }
+        val endTimeInSeconds = sleep.map { data -> data.endTime.epochSecond }
+        val observations = sleep.size
+
+        val meanStart = startTimeInSeconds.average()
+        var variance = startTimeInSeconds.map{
+            (it-meanStart).pow(2)}.average()
+        val stdStartTime = Math.sqrt(variance)
+
+        val meanEnd = endTimeInSeconds.average()
+        variance = endTimeInSeconds.map {
+            (it-meanEnd).pow(2)}.average()
+        val stdEndTime = Math.sqrt(variance)
+
+        val meanCombined = (meanStart*observations + meanEnd*observations)/(observations*2)
+        val dStart = meanStart - meanCombined
+        val dEnd = meanEnd - meanCombined
+        val stdCombined = (observations*stdStartTime.pow(2)+observations*stdEndTime.pow(2)+observations*dStart.pow(2)+observations*dEnd.pow(2))/(observations*2)
+        return Math.sqrt(stdCombined)
+    }
+
+    private suspend fun sendMessageToWatch(hrv: List<HeartRateVariabilityRmssdRecord>) {
         try {
             val request = PutDataMapRequest.create("/stress_score").apply {
                 dataMap.putInt("stress_score", 3)
@@ -562,5 +607,4 @@ class HealthConnectManager(private val context: Context) {
         }
     }
     //effort to try and send stressmeasurement results to wear os app
-
-    }
+}
