@@ -89,12 +89,17 @@ fun HealthConnectNavigation(
                     onPermissionsResult()}
             WelcomeScreen(
                 healthConnectAvailability = availability,
-                onResumeAvailabilityCheck = {
-                    healthConnectManager.checkAvailability()},
                 onPermissionsLaunch = { values ->
                     permissionsLauncher.launch(values)},
+                onLoadData = onPermissionsResult,
                 permissionsGranted = permissionsGranted,
-                permissions = permissions
+                permissions = permissions,
+                generateData = {
+                    viewModel.generateAllData()
+                },
+                deleteAllGeneratedData = {
+                    viewModel.deleteAllData()
+                }
             )
 
         }

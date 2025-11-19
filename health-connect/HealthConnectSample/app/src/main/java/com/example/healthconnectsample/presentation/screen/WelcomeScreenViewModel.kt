@@ -1,9 +1,11 @@
 package com.example.healthconnectsample.presentation.screen
 
+import android.os.RemoteException
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.health.connect.client.HealthConnectFeatures
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.permission.HealthPermission.Companion.PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND
 import androidx.health.connect.client.records.DistanceRecord
@@ -21,7 +23,10 @@ import com.example.healthconnectsample.data.HealthConnectManager
 import com.example.healthconnectsample.data.HealthDataCenter
 import com.example.healthconnectsample.presentation.screen.exercisesession.ExerciseSessionViewModel
 import com.example.healthconnectsample.presentation.screen.exercisesession.ExerciseSessionViewModel.UiState
+import com.example.healthconnectsample.presentation.screen.recordlist.RecordListScreenViewModel
 import kotlinx.coroutines.launch
+import java.io.IOException
+import java.util.UUID
 import kotlin.collections.setOf
 
 class WelcomeScreenViewModel (
@@ -61,8 +66,9 @@ class WelcomeScreenViewModel (
     fun initialLoad() {
         Log.i("WelcomeScreenViewModel", "Called initialload. Now doing read functions.")
         viewModelScope.launch {
-            val permissionsGranted = healthConnectManager.hasAllPermissions(permissions)
-            if (!permissionsGranted) {
+            val hasPermissions = healthConnectManager.hasAllPermissions(permissions)
+            permissionsGranted.value = hasPermissions
+            if (!hasPermissions) {
                 // Wenn die Berechtigungen fehlen, starte den Launcher.
                 // Der WelcomeScreen wird diesen Launcher beobachten und starten.
                 Log.d("WelcomeViewModel", "Permissions not granted. Preparing to launch permission request.")
@@ -76,6 +82,51 @@ class WelcomeScreenViewModel (
         }
     }
 
+    fun generateAllData() {
+        viewModelScope.launch {
+            viewModelScope.launch {
+                tryWithPermissionsCheck {
+                    healthConnectManager.generateAllData()
+                }
+            }
+        }
+    }
+
+    fun deleteAllData() {
+        Log.d("WelcomeViewModel", "Deleting all data.")
+        viewModelScope.launch {
+            tryWithPermissionsCheck {
+                healthConnectManager.deleteAllData()
+            }
+        }
+    }
+
+    private suspend fun tryWithPermissionsCheck(block: suspend () -> Unit) {
+        permissionsGranted.value = healthConnectManager.hasAllPermissions(permissions)
+        uiState = try {
+            if (permissionsGranted.value) {
+                block()
+            }
+            UiState.Done
+        } catch (remoteException: RemoteException) {
+            UiState.Error(remoteException)
+        } catch (securityException: SecurityException) {
+            UiState.Error(securityException)
+        } catch (ioException: IOException) {
+            UiState.Error(ioException)
+        } catch (illegalStateException: IllegalStateException) {
+            UiState.Error(illegalStateException)
+        }
+    }
+
+    sealed class UiState {
+        object Uninitialized : UiState()
+        object Done : UiState()
+
+        // A random UUID is used in each Error object to allow errors to be uniquely identified,
+        // and recomposition won't result in multiple snackbars.
+        data class Error(val exception: Throwable, val uuid: UUID = UUID.randomUUID()) : UiState()
+    }
 }
 
 class WelcomeScreenViewModelFactory(

@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -58,14 +59,15 @@ import com.example.healthconnectsample.presentation.theme.HealthConnectTheme
 @Composable
 fun WelcomeScreen(
     healthConnectAvailability: Int,
-    onResumeAvailabilityCheck: () -> Unit,
     onPermissionsLaunch: (Set<String>) -> Unit,
     permissionsGranted: Boolean,
     permissions: Set<String>,
+    onLoadData: () -> Unit,
+    generateData: () -> Unit,
+    deleteAllGeneratedData: () -> Unit = {},
     lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current
 ) {
-    val currentOnAvailabilityCheck by rememberUpdatedState(onResumeAvailabilityCheck)
-
+    val currentOnLoadData by rememberUpdatedState(onLoadData)
     // Add a listener to re-check whether Health Connect has been installed each time the Welcome
     // screen is resumed: This ensures that if the user has been redirected to the Play store and
     // followed the onboarding flow, then when the app is resumed, instead of showing the message
@@ -75,7 +77,8 @@ fun WelcomeScreen(
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                currentOnAvailabilityCheck()
+                Log.d("WelcomeScreen", "LoadData???")
+                currentOnLoadData()
             }
         }
 
@@ -121,7 +124,29 @@ fun WelcomeScreen(
             SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED -> NotInstalledMessage()
             SDK_UNAVAILABLE -> NotSupportedMessage()
         }
+        Spacer(modifier = Modifier.height(200.dp))
+        Button(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+                .padding(4.dp),
+            onClick = {
+                generateData()
+            }) {
+            Text(stringResource(id = R.string.generate_data))
+        }
+        Button(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+                .padding(4.dp),
+            onClick = {
+                deleteAllGeneratedData()
+            }) {
+            Text(stringResource(id = R.string.delete_data))
+        }
     }
+
 }
 
 @Preview
@@ -130,10 +155,12 @@ fun InstalledMessagePreview() {
     HealthConnectTheme {
         WelcomeScreen(
             healthConnectAvailability = SDK_AVAILABLE,
-            onResumeAvailabilityCheck = {},
+            onLoadData = {},
             onPermissionsLaunch = {},
             permissionsGranted = false,
-            permissions = setOf())
+            permissions = setOf(),
+            generateData = {}
+        )
     }
 }
 
@@ -143,10 +170,12 @@ fun NotInstalledMessagePreview() {
     HealthConnectTheme {
         WelcomeScreen(
             healthConnectAvailability = SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED,
-            onResumeAvailabilityCheck = {},
+            onLoadData = {},
             onPermissionsLaunch = {},
             permissionsGranted = false,
-            permissions = setOf())
+            permissions = setOf(),
+            generateData = {}
+        )
 
     }
 }
@@ -157,10 +186,11 @@ fun NotSupportedMessagePreview() {
     HealthConnectTheme {
         WelcomeScreen(
             healthConnectAvailability = SDK_UNAVAILABLE,
-            onResumeAvailabilityCheck = {},
+            onLoadData = {},
             onPermissionsLaunch = {},
             permissionsGranted = false,
-            permissions = setOf()
+            permissions = setOf(),
+            generateData = {}
         )
     }
 }

@@ -32,6 +32,8 @@
         Health Connect is installed on this device. Use the menu to explore the sample, with each
         screen demonstrating a different aspect of Health Connect functionality.
     </string>
+    <string name="generate_data">Generate data</string>
+    <string name="delete_data">Delete generated data</string>
 
     <!-- Privacy policy screen -->
     <string name="privacy_policy">Privacy policy</string>

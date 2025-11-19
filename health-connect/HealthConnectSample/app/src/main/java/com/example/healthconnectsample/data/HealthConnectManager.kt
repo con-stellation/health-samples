@@ -22,6 +22,7 @@ import android.content.res.Resources.NotFoundException
 import android.os.Build
 import android.util.Log
 import androidx.activity.result.contract.ActivityResultContract
+import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.mutableStateOf
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.HealthConnectClient.Companion.SDK_UNAVAILABLE
@@ -46,21 +47,27 @@ import androidx.health.connect.client.response.InsertRecordsResponse
 import androidx.health.connect.client.time.TimeRangeFilter
 import androidx.health.connect.client.units.Energy
 import androidx.health.connect.client.units.Length
+import androidx.lifecycle.viewModelScope
 import com.example.healthconnectsample.R
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.Wearable
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.io.IOException
 import java.io.InvalidObjectException
+import java.time.Duration
 import java.time.Instant
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
+import kotlin.collections.get
 import kotlin.math.pow
+import kotlin.math.roundToInt
 import kotlin.random.Random
 import kotlin.reflect.KClass
+import kotlin.time.times
 
 // The minimum android level that can use Health Connect
 const val MIN_SUPPORTED_SDK = Build.VERSION_CODES.O_MR1
@@ -69,7 +76,6 @@ const val MIN_SUPPORTED_SDK = Build.VERSION_CODES.O_MR1
 class HealthConnectManager(private val context: Context) {
     private val healthConnectClient by lazy { HealthConnectClient.getOrCreate(context) }
 
-    val OPTIMAL_SLEEP_DURATION = 8
     private val changesDataTypes = setOf(
         ExerciseSessionRecord::class,
         StepsRecord::class,
@@ -350,6 +356,26 @@ class HealthConnectManager(private val context: Context) {
         healthConnectClient.insertRecords(records)
     }
 
+    suspend fun generateHrvData() {
+        val records = mutableListOf<Record>()
+        // Create 7 days-worth of sleep data
+        for (i in 0..7) {
+            val measurementTime = ZonedDateTime.now().minusDays(i+1L).truncatedTo(ChronoUnit.DAYS)
+            val hrvRecord = HeartRateVariabilityRmssdRecord(
+                metadata = Metadata.manualEntry(),
+                time = measurementTime.toInstant(),
+                zoneOffset = measurementTime.offset,
+                heartRateVariabilityMillis = (20..100).shuffled().first().toDouble()
+            )
+            records.add(hrvRecord)
+        }
+        healthConnectClient.insertRecords(records)
+    }
+
+    suspend fun deleteAllHrvData() {
+        val now = Instant.now()
+        healthConnectClient.deleteRecords(HeartRateVariabilityRmssdRecord::class, TimeRangeFilter.before(now))
+    }
     /**
      * Reads sleep sessions for the previous seven days (from yesterday) to show a week's worth of
      * sleep data.
@@ -534,40 +560,68 @@ class HealthConnectManager(private val context: Context) {
         sleep: List<SleepSessionData>
     ): Int {
         Log.d("calculateStress", "calculateStress called")
-        calculateSleepIndex(sleep)
+        val sleepIndex = calculateSleepIndex(sleep)
+        hrv.forEach { hrv ->
+            Log.d("calculateStress", "hrv: $hrv")
+        }
         sendMessageToWatch(hrv)
         return 0
     }
 
+    /*
+    Hier wird der Schlafindex berechnet. Er ist ein Kennwert für die Schlafqualität, welche sich wiederum auf
+    die Psyche und den Stress der Nutzer auswirkt. Die Herangehensweise ist aus https://kiwi-health.de/en/sleep-quality-and-sleep-index/
+    entnommen.
+     */
     fun calculateSleepIndex(sleep: List<SleepSessionData>): Int {
-        if(sleep.isNotEmpty()) {
-            val totalSleepDuration = sleep[0].duration?.toMinutes()?.toDouble() // hier fehlt noch die sleepduration die später in der rechnung verwendet werden soll (also durch 8 dividierter Wert)
-            val optimalDepth = totalSleepDuration?.times(0.45) ?: 0.0
+        if(sleep.isEmpty()) {
+            return 0
+        }
+        val totalSleepDuration = sleep[0].duration?.toMillis()?.div(1000.0)
+        val optimalDepth = totalSleepDuration?.times(0.45) ?: 0.0
 
-            val duration = sleep[0].duration?.toMinutes()?.toDouble()?.div(8)
-            var deepSleep = 0.0
-            var remSleep = 0.0
+        val duration = (sleep[0].duration?.toMillis()?.div(1000.0)?.div(8*60*60)?.times(100))?.roundToInt()
+            ?:0
+        var deepSleep = 0.0
+        var remSleep = 0.0
+        var interruptions = 0.0
 
-            sleep[0].stages.forEach{ stage ->
-                val stageDuration = stage.endTime.epochSecond - stage.startTime.epochSecond
-                when(stage.stage) {
-                    SleepSessionRecord.STAGE_TYPE_DEEP -> deepSleep += stageDuration
-                    SleepSessionRecord.STAGE_TYPE_REM -> remSleep += stageDuration
-                }
+        // hier werden die Schlafphasen-Dauern einzeln erhoben
+        sleep[0].stages.forEach{ stage ->
+            val stageDuration = stage.endTime.epochSecond - stage.startTime.epochSecond
+            when(stage.stage) {
+                SleepSessionRecord.STAGE_TYPE_DEEP -> deepSleep += stageDuration
+                SleepSessionRecord.STAGE_TYPE_REM -> remSleep += stageDuration
+                SleepSessionRecord.STAGE_TYPE_AWAKE -> interruptions += 1
             }
-
-            val depth = (deepSleep+remSleep)/optimalDepth
-
-            Log.d("calculateSleepIndex", "duration: $duration, depth: $depth")
-
         }
 
-        val OPTIMAL_SLEEP_REGULARITY = calculateOptimalSleepRegularity(sleep)
-        val index = (duration?.multipliedBy(4)?.dividedBy(10)?.plus(depth*0.25) + regularity*0.2 + interruptions*0.1 + timeUntilAsleep*0.05)/100
-        return index*100
+        val depth = (((deepSleep+remSleep)/optimalDepth)*100).roundToInt().coerceIn(0, 100)
+        val regularity = 100 - (calculateSleepRegularity(sleep)/(2*60*60)).roundToInt() // Timecap bei 2 Stunden angelegt.
+        var interruptionsIndex = ((interruptions/7)*100).roundToInt()
+        interruptionsIndex = 100 - interruptionsIndex
+
+
+        var timeUntilAsleep = 0L
+        sleep[0].stages.takeWhile { stage ->
+            stage.stage != SleepSessionRecord.STAGE_TYPE_REM &&
+                    stage.stage != SleepSessionRecord.STAGE_TYPE_DEEP &&
+                    stage.stage != SleepSessionRecord.STAGE_TYPE_LIGHT &&
+                    stage.stage != SleepSessionRecord.STAGE_TYPE_SLEEPING
+        }.forEach { s -> timeUntilAsleep += s.endTime.epochSecond - s.startTime.epochSecond }
+        timeUntilAsleep = 100 - ((timeUntilAsleep/(30*60))*100).coerceIn(0, 100)
+
+        val index = (duration.times(0.4) + depth*0.25 + regularity*0.2 + interruptionsIndex*0.1 + timeUntilAsleep*0.05)/100
+
+        val resultSleepIndex = (index*100).roundToInt()
+        Log.d("calculateSleepIndex", "totalSleepDuration: $totalSleepDuration, optimalDepth: $optimalDepth, duration: $duration, depth: $depth, regularity: $regularity, interruptionsIndex: $interruptionsIndex, timeUntilAsleep: $timeUntilAsleep")
+        Log.d("calculateSleepIndex", "resultSleepIndex: $resultSleepIndex")
+
+        return resultSleepIndex
     }
 
-    private fun calculateOptimalSleepRegularity(sleep: List<SleepSessionData>): Double {
+    private fun calculateSleepRegularity(sleep: List<SleepSessionData>): Double {
+        // TODO hier noch Daten der letzten 14 Tage berücksichtigen? Aktuell umfassen die Einträge 7 Tage
         val startTimeInSeconds = sleep.map { data -> data.startTime.epochSecond }
         val endTimeInSeconds = sleep.map { data -> data.endTime.epochSecond }
         val observations = sleep.size
@@ -585,8 +639,10 @@ class HealthConnectManager(private val context: Context) {
         val meanCombined = (meanStart*observations + meanEnd*observations)/(observations*2)
         val dStart = meanStart - meanCombined
         val dEnd = meanEnd - meanCombined
-        val stdCombined = (observations*stdStartTime.pow(2)+observations*stdEndTime.pow(2)+observations*dStart.pow(2)+observations*dEnd.pow(2))/(observations*2)
-        return Math.sqrt(stdCombined)
+        val stdCombined = Math.sqrt((observations*stdStartTime.pow(2)+observations*stdEndTime.pow(2)+observations*dStart.pow(2)+observations*dEnd.pow(2))/(observations*2))
+        Log.d("calculateSleepRegularity", "stdStartTime: $stdStartTime, stdEndTime: $stdEndTime, stdCombined: $stdCombined")
+
+        return stdCombined
     }
 
     private suspend fun sendMessageToWatch(hrv: List<HeartRateVariabilityRmssdRecord>) {
@@ -607,4 +663,45 @@ class HealthConnectManager(private val context: Context) {
         }
     }
     //effort to try and send stressmeasurement results to wear os app
+
+    suspend fun insertExerciseSession() {
+        val startOfDay = ZonedDateTime.now().truncatedTo(ChronoUnit.DAYS)
+        val latestStartOfSession = ZonedDateTime.now().minusMinutes(30)
+        val offset = Random.nextDouble()
+
+        // Generate random start time between the start of the day and (now - 30mins).
+        val startOfSession = startOfDay.plusSeconds(
+            (Duration.between(startOfDay, latestStartOfSession).seconds * offset).toLong()
+        )
+        val endOfSession = startOfSession.plusMinutes(30)
+
+        writeExerciseSession(startOfSession, endOfSession)
+        val end = ZonedDateTime.now().toInstant()
+        val start = ZonedDateTime.now().minusDays(1).toInstant()
+
+        readExerciseSessions(start, end)
+    }
+
+    suspend fun generateAllData(){
+        generateHrvData()
+        generateSleepData()
+        insertExerciseSession()
+    }
+
+    suspend fun deleteAllData() {
+        Log.d("HealthConnectManager", "deleteAllData called")
+        deleteAllHrvData()
+        deleteAllSleepData()
+        val end = ZonedDateTime.now().truncatedTo(ChronoUnit.DAYS)
+        val start = end
+            .minusDays(30)
+        val request = ReadRecordsRequest(
+            recordType = ExerciseSessionRecord::class,
+            timeRangeFilter = TimeRangeFilter.between(start.toInstant(), end.toInstant())
+        )
+        val readRecords = healthConnectClient.readRecords(request)
+        readRecords.records.forEach { record ->
+            deleteExerciseSession(record.metadata.id)
+        }
+    }
 }
