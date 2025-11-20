@@ -22,8 +22,6 @@ import androidx.lifecycle.viewModelScope
 import com.example.healthconnectsample.data.HealthConnectManager
 import com.example.healthconnectsample.data.HealthDataCenter
 import com.example.healthconnectsample.presentation.screen.exercisesession.ExerciseSessionViewModel
-import com.example.healthconnectsample.presentation.screen.exercisesession.ExerciseSessionViewModel.UiState
-import com.example.healthconnectsample.presentation.screen.recordlist.RecordListScreenViewModel
 import kotlinx.coroutines.launch
 import java.io.IOException
 import java.util.UUID
@@ -87,6 +85,7 @@ class WelcomeScreenViewModel (
             viewModelScope.launch {
                 tryWithPermissionsCheck {
                     healthConnectManager.generateAllData()
+                    healthDataCenter.fetchHealthData(exerciseSessionVM)
                 }
             }
         }
@@ -97,6 +96,7 @@ class WelcomeScreenViewModel (
         viewModelScope.launch {
             tryWithPermissionsCheck {
                 healthConnectManager.deleteAllData()
+                healthDataCenter.fetchHealthData(exerciseSessionVM)
             }
         }
     }

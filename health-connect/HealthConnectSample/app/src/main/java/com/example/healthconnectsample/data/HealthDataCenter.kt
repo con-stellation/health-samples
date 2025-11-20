@@ -1,5 +1,6 @@
 package com.example.healthconnectsample.data
 
+import android.util.Log
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.health.connect.client.records.HeartRateVariabilityRmssdRecord
@@ -15,10 +16,13 @@ class HealthDataCenter (private val healthConnectManager: HealthConnectManager){
     var sleepSessionList: MutableState<List<SleepSessionData>> = mutableStateOf(listOf())
         private set
     private val healthConnectCompatibleApps = healthConnectManager.healthConnectCompatibleApps
+
+    // Reads all necessary healthdata for stresscalculation
     suspend fun fetchHealthData(exerciseSessionViewModel: ExerciseSessionViewModel?) {
         val end = ZonedDateTime.now().toInstant()
         val start = ZonedDateTime.now().minusDays(1).toInstant()
         exerciseSessionViewModel?.initialLoad()
+        Log.d("HealthDataCenter", "doing read for ExerciseSessions now")
         exerciseSessionsList.value = healthConnectManager
             .readExerciseSessions(start, end)
             .map { record ->

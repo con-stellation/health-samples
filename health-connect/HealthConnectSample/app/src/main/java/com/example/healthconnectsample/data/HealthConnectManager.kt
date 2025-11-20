@@ -686,22 +686,20 @@ class HealthConnectManager(private val context: Context) {
         generateHrvData()
         generateSleepData()
         insertExerciseSession()
+
     }
 
     suspend fun deleteAllData() {
         Log.d("HealthConnectManager", "deleteAllData called")
         deleteAllHrvData()
-        deleteAllSleepData()
+        deleteAllSleepData() //klappt zumindest visuell nicht
         val end = ZonedDateTime.now().truncatedTo(ChronoUnit.DAYS)
         val start = end
             .minusDays(30)
-        val request = ReadRecordsRequest(
-            recordType = ExerciseSessionRecord::class,
-            timeRangeFilter = TimeRangeFilter.between(start.toInstant(), end.toInstant())
-        )
-        val readRecords = healthConnectClient.readRecords(request)
-        readRecords.records.forEach { record ->
+        val readRecords = readExerciseSessions(start.toInstant(), end.toInstant())
+        readRecords.forEach { record ->
             deleteExerciseSession(record.metadata.id)
+            readExerciseSessions(start.toInstant(), end.toInstant())
         }
     }
 }

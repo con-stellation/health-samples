@@ -46,11 +46,9 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.healthconnectsample.R
-import com.example.healthconnectsample.data.HealthDataCenter
 import com.example.healthconnectsample.presentation.component.InstalledMessage
 import com.example.healthconnectsample.presentation.component.NotInstalledMessage
 import com.example.healthconnectsample.presentation.component.NotSupportedMessage
-import com.example.healthconnectsample.presentation.screen.exercisesession.ExerciseSessionViewModel
 import com.example.healthconnectsample.presentation.theme.HealthConnectTheme
 
 /**
