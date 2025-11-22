@@ -16,7 +16,9 @@ import kotlinx.coroutines.tasks.await
 
 class MessageListener: WearableListenerService(), DataClient.OnDataChangedListener {
     private lateinit var dataClient: DataClient
-    val PATH = "/stress_score"
+    val STRESS_PATH = "/stress_score"
+    val EXERCISE_PATH = "/exercise_choice"
+    val dataEvaluation = DataEvaluationService()
 
     private val messageClient by lazy { Wearable.getMessageClient(this) }
 
@@ -29,12 +31,10 @@ class MessageListener: WearableListenerService(), DataClient.OnDataChangedListen
         dataEvents.forEach { dataEvent ->
             val uri = dataEvent.dataItem.uri
             when (uri.path) {
-                PATH -> {
-                    // Retrieve the count. This must be done synchronously: dataEvents is likely to
-                    // be stale/invalid if accessed from the new coroutine created by scope.launch.
+                STRESS_PATH -> {
                     val dataMapItem = DataMapItem.fromDataItem(dataEvent.dataItem)
-                    val score = dataMapItem.dataMap.getInt("streess_score", 0)
-                    Log.d("MessageListener", "Score received: $score")
+                    val companionData = dataMapItem.dataMap.getIntegerArrayList("stress_score")
+                    Log.d("MessageListener StressScore", "Score received: $companionData")
                     scope.launch {
                         try {
                             val nodeId = uri.host!!
@@ -45,12 +45,36 @@ class MessageListener: WearableListenerService(), DataClient.OnDataChangedListen
                                 payload
                             ).await()
 
-                            Log.d("MessageListener", "Message sent successfully")
+                            Log.d("MessageListener StressScore", "Message sent successfully")
                         } catch (cancellationException: CancellationException) {
                             throw cancellationException
                         } catch (exception: Exception) {
-                            Log.d("MessageListener", "Message failed")
+                            Log.d("MessageListener StressScore", "Message failed")
                         }
+                        dataEvaluation.evaluateData(companionData)
+                    }
+                }
+                EXERCISE_PATH -> {
+                    val dataMapItem = DataMapItem.fromDataItem(dataEvent.dataItem)
+                    val companionData = dataMapItem.dataMap.getInt("exercise_choice")
+                    Log.d("MessageListener ExerciseChoice", "Exercise choice updated: $companionData")
+                    scope.launch {
+                        try {
+                            val nodeId = uri.host!!
+                            val payload = uri.toString().toByteArray()
+                            messageClient.sendMessage(
+                                nodeId,
+                                "Acknowledge",
+                                payload
+                            ).await()
+
+                            Log.d("MessageListener ExerciseChoice", "Message sent successfully")
+                        } catch (cancellationException: CancellationException) {
+                            throw cancellationException
+                        } catch (exception: Exception) {
+                            Log.d("MessageListener ExerciseChoice", "Message failed")
+                        }
+                        dataEvaluation.evaluateData(companionData)
                     }
                 }
             }

@@ -58,6 +58,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.flow.callbackFlow
 import androidx.core.net.toUri
+import com.example.healthapp.service.RealityCheck
 import com.google.android.gms.tasks.Tasks
 
 /**
@@ -74,6 +75,14 @@ constructor(
     private val vibrator: Vibrator,
 ) {
     val exerciseClient: ExerciseClient = healthServicesClient.exerciseClient
+
+    val realityCheck: RealityCheck = RealityCheck()
+
+    var hrMaxThresh = 0
+    var hrMinThresh = 0
+
+    private var windowStartTime: Long = 0L
+    private var collectedHrDatapoints = mutableListOf<Pair<Double, Long>>()
 
     suspend fun getExerciseCapabilities(): ExerciseTypeCapabilities? {
         val capabilities = exerciseClient.getCapabilities()
@@ -245,6 +254,7 @@ constructor(
                 object : ExerciseUpdateCallback {
                     override fun onExerciseUpdateReceived(update: ExerciseUpdate) {
                         logMetrics(update.latestMetrics)
+                        evaluateData(update.latestMetrics)
                         trySendBlocking(ExerciseMessage.ExerciseUpdateMessage(update))
                     }
 
@@ -281,6 +291,43 @@ constructor(
     private companion object {
         const val CALORIES_THRESHOLD = 250.0
     }
+
+    private fun evaluateData(metrics: DataPointContainer) {
+        var avg = 0.0
+        val hrData = metrics.getData(DataType.HEART_RATE_BPM)
+
+        if(hrData.isEmpty()) {
+            Log.i("ExerciseClientManager", "No heart rate data available")
+            return
+        }
+
+        if (hrMaxThresh == 0 && hrMinThresh == 0) {
+            Log.i("ExerciseClientManager", "Thresholds have not been set yet")
+            return
+        }
+
+        if (windowStartTime == 0L){
+            windowStartTime = hrData.first().timeDurationFromBoot.toMillis()
+        }
+
+        hrData.forEach { dataPoint ->
+            collectedHrDatapoints.add(Pair(dataPoint.value, dataPoint.timeDurationFromBoot.toMillis()))
+        }
+
+        if(windowStartTime + 120000 <= hrData.last().timeDurationFromBoot.toMillis()) {
+            val average = hrData.map { it.value }.average()
+            Log.i("ExerciseClientManager", "Average HR: $average")
+            if(average >= hrMaxThresh) {
+                val startTime = System.currentTimeMillis()
+                // TODO Nachricht auslösen und je nach Antwort Threshold neu setzen oder Übung auslösen
+                realityCheck.executeVibration(vibrator)
+
+            }
+
+            collectedHrDatapoints.clear()
+            windowStartTime = 0L
+        }
+    }
 }
 
 private fun logMetrics(metrics: DataPointContainer) {
@@ -291,6 +338,8 @@ private fun logMetrics(metrics: DataPointContainer) {
 
     }
 }
+
+
 data class Thresholds(
     var distance: Double,
     var duration: Duration,
