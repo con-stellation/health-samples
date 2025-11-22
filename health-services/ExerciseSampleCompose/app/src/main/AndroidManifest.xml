@@ -13,7 +13,8 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.healthapp">
 
     <!-- For receiving exercise metrics. -->
     <uses-permission android:name="android.permission.BODY_SENSORS" android:maxSdkVersion="35" />
@@ -36,7 +37,7 @@
         <package android:name="com.google.android.wearable.healthservices" />
     </queries>
     <application
-        android:name="com.example.exercisesamplecompose.app.ExerciseSampleApplication"
+        android:name="com.example.healthapp.ExerciseSampleApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -48,10 +49,10 @@
             android:required="true" />
         <meta-data
             android:name="com.google.android.wearable.standalone"
-            android:value="true" />
+            android:value="false" />
 
         <activity
-            android:name="com.example.exercisesamplecompose.app.MainActivity"
+            android:name="com.example.healthapp.app.MainActivity"
             android:exported="true"
             android:launchMode="singleTask"
             android:taskAffinity=".main">
@@ -69,11 +70,20 @@
             android:name=".service.MessageListener"
             android:exported="true" >
             <intent-filter>
+                <!-- listeners receive events that match the action and data filters -->
                 <action android:name="com.google.android.gms.wearable.DATA_CHANGED" />
+                <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
                 <data
                     android:host="*"
-                    android:scheme="wear"
-                    android:pathPrefix="/stress_request" />
+                    android:pathPrefix="/stress_score"
+                    android:scheme="wear" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
+                <data
+                    android:host="*"
+                    android:pathPrefix="/vital_data"
+                    android:scheme="wear" />
             </intent-filter>
         </service>
     </application>

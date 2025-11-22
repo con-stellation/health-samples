@@ -26,7 +26,7 @@ android {
   compileSdk 36
 
   defaultConfig {
-    applicationId "com.example.exercisecompose"
+    applicationId "com.example.healthconnectsample"
     minSdk 30
     targetSdk 36
     versionCode 1
@@ -70,7 +70,7 @@ android {
 
     }
   }
-  namespace 'com.example.exercisesamplecompose'
+  namespace 'com.example.healthapp'
 }
 
 kotlin {
@@ -140,4 +140,6 @@ dependencies {
   androidTestImplementation libs.test.espresso.core
   androidTestImplementation libs.compose.ui.test.junit4
   debugImplementation libs.compose.ui.tooling
+  implementation(libs.play.services.wearable)
+  implementation(libs.kotlinx.coroutines.play.services)
 }

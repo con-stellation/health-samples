@@ -9,6 +9,7 @@ dagger = "2.56.2"
 health-services = "1.0.0"
 horologist = "0.7.14-beta"
 kotlin = "2.1.21"
+kotlinx-coroutines-play-services = "1.10.2"
 org-jetbrains-kotlin = "2.1.21"
 ui-test-junit4 = "1.8.3"
 robolectric = "4.14.1"
@@ -54,6 +55,7 @@ horologist-health-service = { module = "com.google.android.horologist:horologist
 horologist-roboscreenshots = { module = "com.google.android.horologist:horologist-roboscreenshots", version.ref = "horologist" }
 jacoco-ant = "org.jacoco:org.jacoco.ant:0.8.12"
 junit = "junit:junit:4.13.2"
+kotlinx-coroutines-play-services = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "kotlinx-coroutines-play-services" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 roborazzi = { group = "io.github.takahirom.roborazzi", name = "roborazzi", version.ref = "roborazzi" }
 roborazzi-compose = { group = "io.github.takahirom.roborazzi", name = "roborazzi-compose", version.ref = "roborazzi" }
