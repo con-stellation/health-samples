@@ -2,13 +2,20 @@ package com.example.healthapp.service
 
 import android.os.VibrationEffect
 import android.os.Vibrator
+import android.util.Log
 import com.example.healthapp.data.DataStoreManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class RealityCheck {
-
+    private var vibrationJob: Job? = null
     @Inject
     lateinit var dataStoreManager: DataStoreManager
 
@@ -45,20 +52,38 @@ class RealityCheck {
         }
     }
 
-    suspend fun executeVibration(vibrator: Vibrator) {
-        val choice = dataStoreManager.readExerciseChoice()
-        choice.collect {
-            setExercise(it)
+     fun executeVibration(coroutineScope: CoroutineScope, vibrator: Vibrator) {
+        stopVibrating(vibrator)
+
+        vibrationJob = coroutineScope.launch(Dispatchers.Default) {
+            val choice = dataStoreManager.readExerciseChoice()
+            choice.collect {
+                setExercise(it)
+            }
+            val repeatIndex = -1
+
+            try {
+                Log.i("RealityCheck", "Starting vibration")
+                while(isActive) {
+                    vibrator.vibrate(
+                        VibrationEffect.createWaveform(
+                            timings, amplitudes, repeatIndex))
+                }
+            }
+            finally {
+                Log.i("RealityCheck", "Stopping vibration")
+                stopVibrating(vibrator)
+            }
+
         }
 
-        val repeatIndex = -1
-        vibrator.vibrate(
-            VibrationEffect.createWaveform(
-                timings, amplitudes, repeatIndex))
 
     }
 
     fun stopVibrating(vibrator: Vibrator) {
-        vibrator.cancel()
+        if(vibrationJob?.isActive == true) {
+            vibrationJob?.cancel()
+        }
+        vibrationJob = null
     }
 }

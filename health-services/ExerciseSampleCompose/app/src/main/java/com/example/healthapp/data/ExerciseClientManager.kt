@@ -60,6 +60,11 @@ import kotlinx.coroutines.flow.callbackFlow
 import androidx.core.net.toUri
 import com.example.healthapp.service.RealityCheck
 import com.google.android.gms.tasks.Tasks
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * Entry point for [HealthServicesClient] APIs, wrapping them in coroutine-friendly APIs.
@@ -75,9 +80,9 @@ constructor(
     private val vibrator: Vibrator,
 ) {
     val exerciseClient: ExerciseClient = healthServicesClient.exerciseClient
-
+    var breathingExerciseJob: Job? = null
     val realityCheck: RealityCheck = RealityCheck()
-
+    private val managerScope = CoroutineScope(Dispatchers.Default)
     var hrMaxThresh = 0
     var hrMinThresh = 0
 
@@ -102,15 +107,9 @@ constructor(
 
     suspend fun startExercise() {
         Log.i("ExerciseClientManager", "Starting exercise")
-        // TODO place vibration somewhere else and with a different pattern. Is here simply for testing purposes
-        val timings: LongArray = longArrayOf(
-            50, 50, 50, 50, 50, 100, 350, 25, 25, 25, 25, 200)
-        val amplitudes: IntArray = intArrayOf(
-            33, 51, 75, 113, 170, 255, 0, 38, 62, 100, 160, 255)
-        val repeatIndex = -1 // Don't repeat.
-        vibrator.vibrate(
-            VibrationEffect.createWaveform(
-            timings, amplitudes, repeatIndex))
+        collectedHrDatapoints.clear()
+        windowStartTime = 0L
+
         val exec : Executor = Executors.newSingleThreadExecutor()
         val connectedNodes = Tasks.await(Wearable.getNodeClient(applicationContext).connectedNodes)
         Log.i("ExerciseClientManager", "Connected nodes: $connectedNodes. Trying to start remote companion.")
@@ -221,6 +220,8 @@ constructor(
 
     suspend fun endExercise() {
         logger.log("Ending exercise")
+        collectedHrDatapoints.clear()
+        windowStartTime = 0L
         exerciseClient.endExercise()
     }
 
@@ -315,16 +316,28 @@ constructor(
         }
 
         if(windowStartTime + 120000 <= hrData.last().timeDurationFromBoot.toMillis()) {
-            val average = hrData.map { it.value }.average()
+            val average = collectedHrDatapoints.map { it.first }.average()
             Log.i("ExerciseClientManager", "Average HR: $average")
-            if(average >= hrMaxThresh) {
+            if(average >= hrMaxThresh && (breathingExerciseJob?.isActive != true)) {
                 val startTime = System.currentTimeMillis()
                 // TODO Nachricht auslösen und je nach Antwort Threshold neu setzen oder Übung auslösen
-                realityCheck.executeVibration(vibrator)
+                realityCheck.executeVibration(managerScope, vibrator)
+                managerScope.launch {
+                    delay(60000*10)
+                    if(breathingExerciseJob?.isActive == true) {
+                        realityCheck.stopVibrating(vibrator)
+                    }
+                }
             }
+            if(average <= hrMinThresh) {
+                realityCheck.stopVibrating(vibrator)
+                breathingExerciseJob = null
+            }
+
 
             collectedHrDatapoints.clear()
             windowStartTime = 0L
+
         }
     }
 }
