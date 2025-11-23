@@ -17,6 +17,8 @@ package com.example.healthapp.presentation
 
 import ExerciseGoalsRoute
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
@@ -30,6 +32,7 @@ import com.example.healthapp.app.Screen.PreparingExercise
 import com.example.healthapp.app.Screen.Summary
 import com.example.healthapp.app.navigateToTopLevel
 import com.example.healthapp.presentation.dialogs.ExerciseNotAvailable
+import com.example.healthapp.presentation.dialogs.PanicDetectedAlert
 import com.example.healthapp.presentation.exercise.ExerciseRoute
 import com.example.healthapp.presentation.preparing.PreparingExerciseRoute
 import com.example.healthapp.presentation.summary.SummaryRoute
@@ -100,6 +103,15 @@ fun ExerciseSampleApp(
             }
             composable(Screen.Goals.route) {
                 ExerciseGoalsRoute(onSet = { navController.popBackStack() })
+            }
+            composable(Screen.Panic.route) {
+                val viewModel: PanicViewModel = hiltViewModel()
+
+                PanicDetectedAlert(
+                    showDialog = viewModel.isPanicDetected.collectAsState(),
+                    onPositive = { viewModel.confirmAssistance() },
+                    onNegative = { viewModel.onDismissDialog() }
+                )
             }
         }
     }

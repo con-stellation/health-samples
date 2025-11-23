@@ -55,6 +55,11 @@
     <string name="exercise_in_progress">Exercise In Progress</string>
     <string name="ending_continue">Ending other exercise. Continue?</string>
 
+    <!-- Panic detected Dialog -->
+    <string name="panic_detected">Monitoring in process</string>
+    <string name="assistance_needed">Do you require assistance?</string>
+
+
     <!-- Exercise Goals -->
     <string name="km"> km</string>
     <string name="minutes"> min</string>

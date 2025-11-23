@@ -29,6 +29,8 @@ sealed class Screen(
 
     object Goals : Screen(route = "goals")
 
+    object Panic : Screen(route = "panic")
+
     object Summary : Screen("summaryScreen") {
         fun buildRoute(summary: SummaryScreenState): String =
             "$route/${summary.averageHeartRate}/${summary.totalDistance}" +

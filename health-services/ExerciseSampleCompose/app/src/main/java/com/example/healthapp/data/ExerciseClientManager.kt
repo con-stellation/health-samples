@@ -22,6 +22,7 @@ import androidx.concurrent.futures.await
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.util.Log
+import androidx.compose.runtime.MutableState
 import androidx.health.services.client.ExerciseClient
 import androidx.health.services.client.ExerciseUpdateCallback
 import androidx.health.services.client.HealthServicesClient
@@ -60,10 +61,13 @@ import kotlinx.coroutines.flow.callbackFlow
 import androidx.core.net.toUri
 import com.example.healthapp.service.RealityCheck
 import com.google.android.gms.tasks.Tasks
+import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
@@ -89,6 +93,11 @@ constructor(
     private set
     var hrMinThresh = 0
     private set
+
+    var hrAverage = 0
+
+    private val heartRateCriticalMutableFlow = MutableStateFlow(false)
+    val heartRateCritical = heartRateCriticalMutableFlow.asStateFlow()
 
     private var windowStartTime: Long = 0L
     private var collectedHrDatapoints = mutableListOf<Pair<Double, Long>>()
@@ -322,31 +331,47 @@ constructor(
         }
 
         if(windowStartTime + 120000 <= hrData.last().timeDurationFromBoot.toMillis()) {
-            val average = collectedHrDatapoints.map { it.first }.average()
-            Log.i("ExerciseClientManager", "Average HR: $average")
-            if(average >= hrMaxThresh && (breathingExerciseJob?.isActive != true)) {
-                val startTime = System.currentTimeMillis()
-                // TODO Nachricht auslösen und je nach Antwort Threshold neu setzen oder Übung auslösen
-                breathingExerciseJob = realityCheck.executeVibration(managerScope, vibrator)
-                managerScope.launch {
-                    delay(60000*10)
-                    if(breathingExerciseJob?.isActive == true) {
-                        realityCheck.stopVibrating(vibrator)
-                    }
-                }
+            hrAverage = collectedHrDatapoints.map { it.first }.average().roundToInt()
+            Log.i("ExerciseClientManager", "Average HR: $hrAverage")
+            if(hrAverage >= hrMaxThresh) {
+                Log.i("ExerciseClientManager", "Heart rate exceeded threshold")
+                heartRateCriticalMutableFlow.value = true
             }
-            if(average <= hrMinThresh) {
+            if(hrAverage <= hrMinThresh) {
                 realityCheck.stopVibrating(vibrator)
                 breathingExerciseJob = null
             }
-
 
             collectedHrDatapoints.clear()
             windowStartTime = 0L
 
         }
     }
+
+    fun startBreathingExercise() {
+        if (breathingExerciseJob?.isActive != true) {
+            Log.i("ExerciseClientManager", "Starting breathing exercise")
+            //val startTime = System.currentTimeMillis()
+            breathingExerciseJob = realityCheck.executeVibration(managerScope, vibrator)
+            managerScope.launch {
+                delay(60000 * 10)
+                if (breathingExerciseJob?.isActive == true) {
+                    realityCheck.stopVibrating(vibrator)
+                }
+            }
+        }
+    }
+
+    fun resetCriticalHeartRateState() {
+        heartRateCriticalMutableFlow.value = false
+    }
+
+    fun updateHeartRateThreshold() {
+        hrMaxThresh = hrAverage
+    }
 }
+
+
 
 private fun logMetrics(metrics: DataPointContainer) {
     metrics.getData(DataType.HEART_RATE_BPM).forEach { dataPoint ->
