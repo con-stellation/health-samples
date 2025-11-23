@@ -52,7 +52,7 @@ class RealityCheck {
         }
     }
 
-     fun executeVibration(coroutineScope: CoroutineScope, vibrator: Vibrator) {
+     fun executeVibration(coroutineScope: CoroutineScope, vibrator: Vibrator): Job {
         stopVibrating(vibrator)
 
         vibrationJob = coroutineScope.launch(Dispatchers.Default) {
@@ -77,7 +77,7 @@ class RealityCheck {
 
         }
 
-
+         return vibrationJob!!
     }
 
     fun stopVibrating(vibrator: Vibrator) {

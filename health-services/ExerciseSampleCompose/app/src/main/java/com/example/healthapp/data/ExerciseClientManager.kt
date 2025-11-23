@@ -64,6 +64,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 /**
@@ -78,17 +79,28 @@ constructor(
     healthServicesClient: HealthServicesClient,
     private val logger: ExerciseLogger,
     private val vibrator: Vibrator,
+    private val dataStoreManager: DataStoreManager
 ) {
     val exerciseClient: ExerciseClient = healthServicesClient.exerciseClient
     var breathingExerciseJob: Job? = null
     val realityCheck: RealityCheck = RealityCheck()
     private val managerScope = CoroutineScope(Dispatchers.Default)
     var hrMaxThresh = 0
+    private set
     var hrMinThresh = 0
+    private set
 
     private var windowStartTime: Long = 0L
     private var collectedHrDatapoints = mutableListOf<Pair<Double, Long>>()
 
+    init {
+        managerScope.launch {
+            dataStoreManager.readThresholds().collect { thresholds ->
+                hrMaxThresh = thresholds[1] ?: 100
+                hrMinThresh = thresholds[0] ?: 70
+            }
+        }
+    }
     suspend fun getExerciseCapabilities(): ExerciseTypeCapabilities? {
         val capabilities = exerciseClient.getCapabilities()
 
@@ -294,16 +306,10 @@ constructor(
     }
 
     private fun evaluateData(metrics: DataPointContainer) {
-        var avg = 0.0
         val hrData = metrics.getData(DataType.HEART_RATE_BPM)
 
         if(hrData.isEmpty()) {
             Log.i("ExerciseClientManager", "No heart rate data available")
-            return
-        }
-
-        if (hrMaxThresh == 0 && hrMinThresh == 0) {
-            Log.i("ExerciseClientManager", "Thresholds have not been set yet")
             return
         }
 
@@ -321,7 +327,7 @@ constructor(
             if(average >= hrMaxThresh && (breathingExerciseJob?.isActive != true)) {
                 val startTime = System.currentTimeMillis()
                 // TODO Nachricht auslösen und je nach Antwort Threshold neu setzen oder Übung auslösen
-                realityCheck.executeVibration(managerScope, vibrator)
+                breathingExerciseJob = realityCheck.executeVibration(managerScope, vibrator)
                 managerScope.launch {
                     delay(60000*10)
                     if(breathingExerciseJob?.isActive == true) {

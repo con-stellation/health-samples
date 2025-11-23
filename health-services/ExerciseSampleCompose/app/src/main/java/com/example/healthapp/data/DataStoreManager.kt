@@ -31,6 +31,13 @@ class DataStoreManager @Inject constructor(@ApplicationContext private val conte
         i ?: 0
     }
 
+    fun readThresholds(): Flow<ArrayList<Int?>> = context.dataStore.data.map { preferences ->
+        val list = ArrayList<Int?>()
+        list.add(preferences[HR_MIN_THRESH])
+        list.add(preferences[HR_MAX_THRESH])
+        list
+    }
+
 
     suspend fun saveExerciseChoice(choice: Int) {
         context.dataStore.updateData {
@@ -54,8 +61,8 @@ class DataStoreManager @Inject constructor(@ApplicationContext private val conte
     suspend fun saveThresholds(data: ArrayList<Int?>?) {
         context.dataStore.updateData {
             it.toMutablePreferences().also { preferences ->
-                preferences[HR_MAX_THRESH] = data?.get(0) ?:100
-                preferences[HR_MIN_THRESH] = data?.get(1) ?:60
+                preferences[HR_MAX_THRESH] = data?.get(1) ?:100
+                preferences[HR_MIN_THRESH] = data?.get(0) ?:60
             }
         }
     }
