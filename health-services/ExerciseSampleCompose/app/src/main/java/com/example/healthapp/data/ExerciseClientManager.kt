@@ -321,7 +321,6 @@ constructor(
                 val startTime = System.currentTimeMillis()
                 // TODO Nachricht auslösen und je nach Antwort Threshold neu setzen oder Übung auslösen
                 realityCheck.executeVibration(vibrator)
-
             }
 
             collectedHrDatapoints.clear()

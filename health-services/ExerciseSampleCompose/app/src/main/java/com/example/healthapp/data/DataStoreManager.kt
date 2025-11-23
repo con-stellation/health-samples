@@ -27,8 +27,10 @@ class DataStoreManager @Inject constructor(@ApplicationContext private val conte
     val RESTING_HR = intPreferencesKey("resting_hr")
 
     fun readExerciseChoice(): Flow<Int> = context.dataStore.data.map { preferences ->
-        preferences[EXERCISE_CHOICE] ?: 0
+        val i = preferences[EXERCISE_CHOICE]
+        i ?: 0
     }
+
 
     suspend fun saveExerciseChoice(choice: Int) {
         context.dataStore.updateData {
