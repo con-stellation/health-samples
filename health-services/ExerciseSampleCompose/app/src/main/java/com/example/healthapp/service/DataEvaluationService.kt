@@ -14,7 +14,7 @@ class DataEvaluationService : LifecycleService(){
         STRESS_SCORE, HRV, RESTING_HR
     }
     @Inject
-    private lateinit var dataStoreManager: DataStoreManager
+    lateinit var dataStoreManager: DataStoreManager
 
     suspend fun evaluateData(data: ArrayList<Int?>?) {
         Log.i("DataEvaluationService", "Received data: $data")

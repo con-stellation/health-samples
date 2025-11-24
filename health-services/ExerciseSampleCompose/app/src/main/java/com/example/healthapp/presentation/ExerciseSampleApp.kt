@@ -108,7 +108,7 @@ fun ExerciseSampleApp(
                 val viewModel: PanicViewModel = hiltViewModel()
 
                 PanicDetectedAlert(
-                    showDialog = viewModel.isPanicDetected.collectAsState(),
+                    showDialog = viewModel.isPanicDetected.collectAsState().value, // wurde auf die Schnelle so gemacht. Funktioniert das mit einfachem Boolean oder sollte ich wieder State<Boolean> einführen?
                     onPositive = { viewModel.confirmAssistance() },
                     onNegative = { viewModel.onDismissDialog() }
                 )

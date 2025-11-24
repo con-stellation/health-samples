@@ -1,7 +1,6 @@
 package com.example.healthapp.presentation.dialogs
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
 import androidx.compose.ui.res.stringResource
 import androidx.wear.compose.material3.AlertDialog
 import androidx.wear.compose.material3.Button
@@ -14,7 +13,7 @@ import com.example.healthapp.R
 fun PanicDetectedAlert (
     onNegative: () -> Unit,
     onPositive: () -> Unit,
-    showDialog: State<Boolean>
+    showDialog: Boolean
 ) {
     AlertDialog(
         visible = showDialog,
