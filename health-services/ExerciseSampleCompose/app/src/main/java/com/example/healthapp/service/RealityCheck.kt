@@ -3,6 +3,7 @@ package com.example.healthapp.service
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.util.Log
+import androidx.lifecycle.LifecycleService
 import com.example.healthapp.data.DataStoreManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -13,7 +14,6 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-@AndroidEntryPoint
 class RealityCheck {
     private var vibrationJob: Job? = null
     @Inject

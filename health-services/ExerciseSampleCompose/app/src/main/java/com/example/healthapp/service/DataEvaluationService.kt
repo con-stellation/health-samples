@@ -1,13 +1,14 @@
 package com.example.healthapp.service
 
 import android.util.Log
+import androidx.lifecycle.LifecycleService
 import com.example.healthapp.data.DataStoreManager
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.ArrayList
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class DataEvaluationService {
+class DataEvaluationService : LifecycleService(){
 
     enum class DataIndices() {
         STRESS_SCORE, HRV, RESTING_HR
