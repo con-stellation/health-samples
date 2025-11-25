@@ -556,6 +556,8 @@ class HealthConnectManager(private val context: Context) {
     ): Int {
         Log.d("calculateStress", "calculateStress called")
         val sleepIndex = calculateSleepIndex(sleep)
+        val hrvIndex = calculateHrvIndex(hrv)
+
         hrv.forEach { hrv ->
             Log.d("calculateStress", "hrv: $hrv")
         }
@@ -598,6 +600,8 @@ class HealthConnectManager(private val context: Context) {
 
 
         var timeUntilAsleep = 0L
+        // Nimmt alle Phasen, die nicht als eine Art Schlaf wahrgenommen wurden VOR dem ersten Schlafeintrag
+        // und addiert die Dauer dieser Phasen zusammen für die Einschlafdauer
         sleep[0].stages.takeWhile { stage ->
             stage.stage != SleepSessionRecord.STAGE_TYPE_REM &&
                     stage.stage != SleepSessionRecord.STAGE_TYPE_DEEP &&
@@ -638,6 +642,10 @@ class HealthConnectManager(private val context: Context) {
         Log.d("calculateSleepRegularity", "stdStartTime: $stdStartTime, stdEndTime: $stdEndTime, stdCombined: $stdCombined")
 
         return stdCombined
+    }
+
+    private fun calculateHrvIndex(hrv: List<HeartRateVariabilityRmssdRecord>): Int {
+        return 0
     }
 
     private suspend fun sendMessageToWatch(hrv: List<HeartRateVariabilityRmssdRecord>) {

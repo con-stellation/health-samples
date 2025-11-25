@@ -139,71 +139,71 @@ fun PreparingExerciseScreen(
         first = ColumnItemType.BodyText,
         last = ColumnItemType.Button
     )
-        ScreenScaffold(
-            scrollState = columnState,
-            timeText = {},
-            contentPadding = contentPadding,
-            modifier = Modifier
-                .ambientGray(ambientState)
-        ) { contentPadding ->
-            LocationStatusText(
-                updatePrepareLocationStatus(
-                    locationAvailability = location ?: LocationAvailability.UNAVAILABLE
-                )
+    ScreenScaffold(
+        scrollState = columnState,
+        timeText = {},
+        contentPadding = contentPadding,
+        modifier = Modifier
+            .ambientGray(ambientState)
+    ) { contentPadding ->
+        LocationStatusText(
+            updatePrepareLocationStatus(
+                locationAvailability = location ?: LocationAvailability.UNAVAILABLE
             )
-            TransformingLazyColumn(
-                state = columnState,
-                contentPadding = contentPadding
-            ) {
-                item {
-                    Text(
-                        textAlign = TextAlign.Center,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        text = stringResource(id = R.string.preparing_exercise),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(
-                                horizontal = 0.15f * LocalConfiguration.current.screenWidthDp.dp
-                            )
-                    )
-                }
-                item {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 6.dp),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally
+        )
+        TransformingLazyColumn(
+            state = columnState,
+            contentPadding = contentPadding
+        ) {
+            item {
+                Text(
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    text = stringResource(id = R.string.preparing_exercise),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            horizontal = 0.15f * LocalConfiguration.current.screenWidthDp.dp
+                        )
+                )
+            }
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 6.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    FilledIconButton(
+                        onClick = onStart,
+                        enabled = uiState is PreparingScreenState.Preparing
                     ) {
-                        FilledIconButton(
-                            onClick = onStart,
-                            enabled = uiState is PreparingScreenState.Preparing
-                        ) {
-                            Icon(
-                                Icons.Default.PlayArrow,
-                                contentDescription = stringResource(id = R.string.start)
-                            )
-                        }
-                    }
-                }
-                item {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 6.dp),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        CompactButton(
-                            label = { Text(stringResource(id = R.string.goal)) },
-                            onClick = onGoals
+                        Icon(
+                            Icons.Default.PlayArrow,
+                            contentDescription = stringResource(id = R.string.start)
                         )
                     }
                 }
             }
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 6.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    CompactButton(
+                        label = { Text(stringResource(id = R.string.goal)) },
+                        onClick = onGoals
+                    )
+                }
+            }
         }
     }
+}
 
 /**Return [LocationAvailability] value code as a string**/
 
