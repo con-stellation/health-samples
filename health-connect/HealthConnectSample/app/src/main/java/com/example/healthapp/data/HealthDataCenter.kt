@@ -20,7 +20,7 @@ class HealthDataCenter (private val healthConnectManager: HealthConnectManager){
     // Reads all necessary healthdata for stresscalculation
     suspend fun fetchHealthData(exerciseSessionViewModel: ExerciseSessionViewModel?) {
         val end = ZonedDateTime.now().toInstant()
-        val start = ZonedDateTime.now().minusDays(1).toInstant()
+        val start = ZonedDateTime.now().minusDays(7).toInstant()
         exerciseSessionViewModel?.initialLoad()
         Log.d("HealthDataCenter", "doing read for ExerciseSessions now")
         exerciseSessionsList.value = healthConnectManager
@@ -36,8 +36,8 @@ class HealthDataCenter (private val healthConnectManager: HealthConnectManager){
                 )
             }
 
-        hrvSessionsList.value = healthConnectManager.readHRV()
+        healthConnectManager.readHRV()
         sleepSessionList.value = healthConnectManager.readSleepSessions()
-        healthConnectManager.calculateStress(hrvSessionsList.value, sleepSessionList.value)
+        healthConnectManager.calculateStress(exerciseSessionsList.value, sleepSessionList.value)
     }
 }

@@ -34,6 +34,7 @@ import androidx.health.connect.client.records.ExerciseSessionRecord
 import androidx.health.connect.client.records.HeartRateRecord
 import androidx.health.connect.client.records.HeartRateVariabilityRmssdRecord
 import androidx.health.connect.client.records.Record
+import androidx.health.connect.client.records.RestingHeartRateRecord
 import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.health.connect.client.records.SpeedRecord
 import androidx.health.connect.client.records.StepsRecord
@@ -51,6 +52,7 @@ import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.Wearable
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.tasks.await
 import java.io.IOException
@@ -59,6 +61,8 @@ import java.time.Duration
 import java.time.Instant
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
+import java.util.ArrayList
+import javax.inject.Inject
 import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.random.Random
@@ -71,6 +75,8 @@ const val MIN_SUPPORTED_SDK = Build.VERSION_CODES.O_MR1
 class HealthConnectManager(private val context: Context) {
     private val healthConnectClient by lazy { HealthConnectClient.getOrCreate(context) }
 
+    @Inject
+    lateinit var dataStoreManager: DataStoreManager
     private val changesDataTypes = setOf(
         ExerciseSessionRecord::class,
         StepsRecord::class,
@@ -163,36 +169,36 @@ class HealthConnectManager(private val context: Context) {
         )
         val response = healthConnectClient.readRecords(request)
 
-//        val putDataReq : PutDataRequest = PutDataMapRequest.create("/exercise_session").run {
-//            dataMap.putString("Exercise ID", ""+response.records[0].metadata.id)
-//            asPutDataRequest()
-//        }.setUrgent()
-//
-//        val putDataTask: Task<DataItem> = dataClient.putDataItem(putDataReq)
         Log.i("HealthConnectManager", "readExerciseSessions: ${response.records}")
         return response.records
     }
 
-    suspend fun readHRV(): List<HeartRateVariabilityRmssdRecord> {
+    suspend fun readHRV() {
         // TODO hier Average über die Woche berechnen und mit altem Wert vergleichen?
-        val end = ZonedDateTime.now().truncatedTo(ChronoUnit.DAYS)
-        val start = end
-            .minusDays(7)
+        var end = ZonedDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(1)
+        var start = end
+            .minusDays(7) // vielleicht lieber über eine noch längere Zeit?
 
-        val request = ReadRecordsRequest(
+        var request = ReadRecordsRequest(
             recordType = HeartRateVariabilityRmssdRecord::class,
             timeRangeFilter = TimeRangeFilter.between(start.toInstant(), end.toInstant())
         )
         val response = healthConnectClient.readRecords(request)
+        val avg = response.records.map { it.heartRateVariabilityMillis }.average()
 
-//        val putDataReq : PutDataRequest = PutDataMapRequest.create("/exercise_session").run {
-//            dataMap.putString("Exercise ID", ""+response.records[0].metadata.id)
-//            asPutDataRequest()
-//        }.setUrgent()
-//
-//        val putDataTask: Task<DataItem> = dataClient.putDataItem(putDataReq)
-        Log.i("HealthConnectManager", "readHRV: ${response.records}")
-        return response.records
+        //Jetzt noch die aktuelle HRV
+        end = ZonedDateTime.now().truncatedTo(ChronoUnit.DAYS)
+        start = end
+            .minusDays(1)
+        request = ReadRecordsRequest(
+            recordType = HeartRateVariabilityRmssdRecord::class,
+            timeRangeFilter = TimeRangeFilter.between(start.toInstant(), end.toInstant())
+        )
+        val currentHrv = healthConnectClient.readRecords(request).records.map { it.heartRateVariabilityMillis }.average().roundToInt()
+        dataStoreManager.saveCurrentHrv(currentHrv)
+        dataStoreManager.saveHrvData(avg.toInt(), response.records.toString())
+
+        Log.i("HealthConnectManager", "readHRV: ${response.records} avg: $avg current: $currentHrv")
     }
 
     /**
@@ -550,19 +556,23 @@ class HealthConnectManager(private val context: Context) {
         data class ChangeList(val changes: List<Change>) : ChangesMessage()
     }
 
+    // Hier wird der Stressindex anhand von Messdaten und ggf. Nutzerangeben berechnet.
+    // Je niedriger er ist, desto besser
     suspend fun calculateStress(
-        hrv: List<HeartRateVariabilityRmssdRecord>,
+        exerciseSessionRecord: List<ExerciseSession>,
         sleep: List<SleepSessionData>
     ): Int {
         Log.d("calculateStress", "calculateStress called")
-        val sleepIndex = calculateSleepIndex(sleep)
-        val hrvIndex = calculateHrvIndex(hrv)
+        val sleepIndex = calculateSleepIndex(sleep) // Je höher desto besser
+        val hrvIndex = calculateHrvIndex() // Je höher desto besser
+        val exerciseIndex = calculateExerciseIndex(exerciseSessionRecord) // Je höher desto besser
 
-        hrv.forEach { hrv ->
-            Log.d("calculateStress", "hrv: $hrv")
-        }
-        sendMessageToWatch(hrv)
-        return 0
+        val anxietyIndex = dataStoreManager.readAnxietyScore().first()
+        val eventConfirmation = if(dataStoreManager.readEventConfirmation().first()) 0 else 100
+
+        val stressIndex = 100 - ((sleepIndex + hrvIndex + exerciseIndex + anxietyIndex + eventConfirmation) / 5)
+        sendMessageToWatch(stressIndex)
+        return stressIndex
     }
 
     /*
@@ -644,14 +654,56 @@ class HealthConnectManager(private val context: Context) {
         return stdCombined
     }
 
-    private fun calculateHrvIndex(hrv: List<HeartRateVariabilityRmssdRecord>): Int {
-        return 0
+    // Berechne den aktuellen HRV-Index für die Stressberechnung und nutze ihn dann für den Durchschnitt der
+    // Berechnung am Folgetag --> der Datensatz für das Einpendeln in einen "Normalwert" wird größer, bis er 2 Monate abdeckt
+    // Je niedriger die HRV umso eher sei man wohl gestresst
+    private suspend fun calculateHrvIndex(): Int {
+        val currentHrv = dataStoreManager.readCurrentHrv().first()
+        var hrvIndex = currentHrv / dataStoreManager.readHrvAvg().first()
+        if(currentHrv > 70) {
+            hrvIndex = 100
+        } else {
+            hrvIndex = (hrvIndex * 50).coerceIn(0,100)
+        }
+
+        val hrvDataList = dataStoreManager.readHrvData().first().split(",").mapNotNull { it.trim().toIntOrNull() }.toMutableList()
+        hrvDataList.add(dataStoreManager.readCurrentHrv().first())
+        if(hrvDataList.size > 60) {
+            hrvDataList.removeAt(0)
+        }
+        dataStoreManager.saveHrvData(hrvDataList.average().roundToInt(), hrvDataList.toString())
+
+        return hrvIndex
     }
 
-    private suspend fun sendMessageToWatch(hrv: List<HeartRateVariabilityRmssdRecord>) {
+    private suspend fun calculateExerciseIndex(exerciseSession: List<ExerciseSession>) : Int {
+        val weeklyDuration = exerciseSession.sumOf {
+            Duration.between(it.startTime, it.endTime).toMinutes()
+        }
+
+        var exerciseIndex = (weeklyDuration / 3*60)*100 // Laut https://adaa.org/living-with-anxiety/managing-anxiety/exercise-stress-and-anxiety ist eine über die Woche verteilte Fitnessroutine besser als einmal 3 Stunden.
+
+        return exerciseIndex.coerceIn(0,100).toInt()
+    }
+
+    private suspend fun sendMessageToWatch(stressIndex: Int) {
+
+        val end = ZonedDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(1)
+        val start = end
+            .minusDays(7) // resting HR wird nur als Anhaltspunkt für die Thresholds verwendet. Vielleicht weiterer Nutzen für direkte Vergleichswerte mit zB Vortag?
+
+        val request = ReadRecordsRequest(
+            recordType = RestingHeartRateRecord::class,
+            timeRangeFilter = TimeRangeFilter.between(start.toInstant(), end.toInstant())
+        )
+
+        val restingHR = healthConnectClient.readRecords(request).records.map { it.beatsPerMinute }.average()
+        Log.d("sendMessageToWatch", "restingHR: $restingHR")
+        val listToSend = arrayOf(restingHR.toInt(), stressIndex).toMutableList()
+
         try {
-            val request = PutDataMapRequest.create("/stress_score").apply {
-                dataMap.putInt("stress_score", 3)
+            val request = PutDataMapRequest.create("/measured_data").apply {
+                dataMap.putIntegerArrayList("measured_data", listToSend as ArrayList<Int?>)
                 dataMap.putLong("timestamp", System.currentTimeMillis())
             }
                 .asPutDataRequest()

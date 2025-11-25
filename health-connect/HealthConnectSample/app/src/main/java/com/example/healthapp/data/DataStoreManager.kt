@@ -8,7 +8,6 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.util.ArrayList
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
@@ -20,6 +19,7 @@ class DataStoreManager @Inject constructor(@ApplicationContext private val conte
     val EXERCISE_CHOICE = intPreferencesKey("exercise_choice")
     val HRVAvg = intPreferencesKey("hrv_avg")
     val HRV = stringPreferencesKey("hrv_data")
+    val CURRENT_HRV = intPreferencesKey("current_hrv")
     val EMERGENCY_NUM = stringPreferencesKey("emergency_num")
     val TAP_PREFERENCES = booleanPreferencesKey("tap_preferences")
     val TEAMBUILDING_PREFERENCES = booleanPreferencesKey("teambuilding_preferences")
@@ -36,6 +36,10 @@ class DataStoreManager @Inject constructor(@ApplicationContext private val conte
 
     fun readHrvData(): Flow<String> = context.dataStore.data.map { preferences ->
         preferences[HRV] ?: "47, 47, 47, 47, 47, 47, 47"
+    }
+
+    fun readCurrentHrv(): Flow<Int> = context.dataStore.data.map { preferences ->
+        preferences[CURRENT_HRV] ?: 47
     }
 
     fun readEmergencyNumber(): Flow<String> = context.dataStore.data.map { preferences ->
@@ -67,6 +71,13 @@ class DataStoreManager @Inject constructor(@ApplicationContext private val conte
         }
     }
 
+    suspend fun saveCurrentHrv(hrv: Int) {
+        context.dataStore.updateData {
+            it.toMutablePreferences().also { preferences ->
+                preferences[CURRENT_HRV] = hrv
+            }
+        }
+    }
     suspend fun saveHrvData(avg: Int, data: String) {
         context.dataStore.updateData {
             it.toMutablePreferences().also { preferences ->
