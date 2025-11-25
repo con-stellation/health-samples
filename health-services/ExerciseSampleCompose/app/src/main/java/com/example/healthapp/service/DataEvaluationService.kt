@@ -16,6 +16,7 @@ class DataEvaluationService : LifecycleService(){
     @Inject
     lateinit var dataStoreManager: DataStoreManager
 
+    // TODO hier noch die empfangenen Datem richtigstellen (nicht nur Threshold sondern auch was mit dem Stressscore passiert)
     suspend fun evaluateData(data: ArrayList<Int?>?) {
         Log.i("DataEvaluationService", "Received data: $data")
         dataStoreManager.saveHealthData(data)

@@ -8,7 +8,6 @@ import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.Wearable
 import com.google.android.gms.wearable.WearableListenerService
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -18,7 +17,7 @@ import kotlinx.coroutines.tasks.await
 
 @AndroidEntryPoint
 class MessageListener: WearableListenerService(), DataClient.OnDataChangedListener {
-    val STRESS_PATH = "/stress_score"
+    val MEASURED_DATA = "/measured_data"
     val EXERCISE_PATH = "/exercise_choice"
     val dataEvaluation = DataEvaluationService()
 
@@ -33,10 +32,10 @@ class MessageListener: WearableListenerService(), DataClient.OnDataChangedListen
         dataEvents.forEach { dataEvent ->
             val uri = dataEvent.dataItem.uri
             when (uri.path) {
-                STRESS_PATH -> {
+                MEASURED_DATA -> {
                     val dataMapItem = DataMapItem.fromDataItem(dataEvent.dataItem)
-                    val companionData = dataMapItem.dataMap.getIntegerArrayList("stress_score")
-                    Log.d("MessageListener StressScore", "Score received: $companionData")
+                    val companionData = dataMapItem.dataMap.getIntegerArrayList("measured_data")
+                    Log.d("MessageListener MeasuredData", "Health data received: $companionData")
                     scope.launch {
                         try {
                             val nodeId = uri.host!!
@@ -47,11 +46,11 @@ class MessageListener: WearableListenerService(), DataClient.OnDataChangedListen
                                 payload
                             ).await()
 
-                            Log.d("MessageListener StressScore", "Message sent successfully")
+                            Log.d("MessageListener MeasuredData", "Message sent successfully")
                         } catch (cancellationException: CancellationException) {
                             throw cancellationException
                         } catch (exception: Exception) {
-                            Log.d("MessageListener StressScore", "Message failed")
+                            Log.d("MessageListener MeasuredData", "Message failed")
                         }
                         dataEvaluation.evaluateData(companionData)
                     }
