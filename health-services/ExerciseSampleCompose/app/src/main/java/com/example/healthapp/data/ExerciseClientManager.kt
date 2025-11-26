@@ -377,7 +377,7 @@ private fun logMetrics(metrics: DataPointContainer) {
     metrics.getData(DataType.HEART_RATE_BPM).forEach { dataPoint ->
         val bpm = dataPoint.value
         val timeStamp = dataPoint.timeDurationFromBoot // Oder eine andere Zeitangabe
-        Log.d("ExerciseService_HR_Background", "Gemessene Herzfrequenz (im Service): $bpm BPM, Zeitstempel: $timeStamp")
+        Log.d("ExerciseService_HR_Background", "Measured Heartrate (im Service): $bpm BPM, Zeitstempel: $timeStamp")
 
     }
 }
