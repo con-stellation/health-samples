@@ -6,6 +6,7 @@ import com.example.healthapp.data.DataStoreManager
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.ArrayList
 import javax.inject.Inject
+import kotlinx.coroutines.flow.first
 
 @AndroidEntryPoint
 class DataEvaluationService @Inject constructor(private val dataStoreManager: DataStoreManager): LifecycleService(){
@@ -24,22 +25,21 @@ class DataEvaluationService @Inject constructor(private val dataStoreManager: Da
             phoneAFriend.sendMessageToContact(false, stressscore)
         }
         val restingHr = data?.get(DataIndices.RESTING_HR.ordinal) ?:70
-        val thresh = dataStoreManager.readThresholds()
+        val thresh = dataStoreManager.readThresholds().first().getOrNull(1)
         val thresholds = ArrayList<Int?>()
         thresholds.add(restingHr + 15) // TODO auch anpassen je nach Minimum oder immer "aktuellen" nehmen? --> Der Aktuelle ist ja ein Durchschnittswert der letzten 7 Tage also ist das so schon okay
 
-        thresh.collect {
-            it.get(1)?.let { it1 ->
-                if(it1 > (restingHr + 30)) {
-                    thresholds.add(restingHr + 30)
-                } else {
-                    thresholds.add(it1)
-                }
+        if (thresh != null) {
+            if(thresh > (restingHr+30)) {
+                thresholds.add(restingHr + 30)
+                dataStoreManager.saveThresholds(data)
+            } else {
+                thresholds.add(thresh)
+                dataStoreManager.saveThresholds(data)
             }
         }
+        }
 
-        dataStoreManager.saveThresholds(data)
-    }
 
     suspend fun evaluateData(data: Int) {
         Log.i("DataEvaluationService", "Received exercise choice: $data")

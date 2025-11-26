@@ -732,7 +732,7 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
         val restingHR = restingHrData.average()
 
         Log.d("sendMessageToWatch", "restingHR: $restingHrData")
-        val listToSend = arrayOf(restingHR.toInt(), stressIndex).toMutableList()
+        val listToSend = arrayOf(30, stressIndex).toMutableList()
 
         try {
             val request = PutDataMapRequest.create("/measured_data").apply {

@@ -104,15 +104,6 @@ fun ExerciseSampleApp(
             composable(Screen.Goals.route) {
                 ExerciseGoalsRoute(onSet = { navController.popBackStack() })
             }
-            composable(Screen.Panic.route) {
-                val viewModel: PanicViewModel = hiltViewModel()
-
-                PanicDetectedAlert(
-                    showDialog = viewModel.isPanicDetected.collectAsState().value, // wurde auf die Schnelle so gemacht. Funktioniert das mit einfachem Boolean oder sollte ich wieder State<Boolean> einführen?
-                    onPositive = { viewModel.confirmAssistance() },
-                    onNegative = { viewModel.onDismissDialog() }
-                )
-            }
         }
     }
 }

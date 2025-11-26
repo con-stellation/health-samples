@@ -1,6 +1,7 @@
 package com.example.healthapp.data
 
 import android.content.Context
+import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.intPreferencesKey
@@ -57,6 +58,7 @@ class DataStoreManager @Inject constructor(@ApplicationContext private val conte
     }
 
     suspend fun saveThresholds(data: ArrayList<Int?>?) {
+        Log.i("DataStoreManager", "Saving thresholds: $data")
         context.dataStore.updateData {
             it.toMutablePreferences().also { preferences ->
                 preferences[HR_MAX_THRESH] = data?.get(1) ?:100

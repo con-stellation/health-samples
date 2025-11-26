@@ -1,5 +1,6 @@
 package com.example.healthapp.presentation
 
+import android.util.Log
 import androidx.compose.runtime.MutableState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -23,6 +24,7 @@ constructor(
     init {
         viewModelScope.launch {
             exerciseClientManager.heartRateCritical.collect { isCritical ->
+                Log.i("PanicViewModel", "Heart rate critical state changed: $isCritical")
                 isPanicDetected_Mutable.value = isCritical
             }
         }

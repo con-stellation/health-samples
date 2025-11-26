@@ -102,6 +102,7 @@ constructor(
     private var windowStartTime: Long = 0L
     private var collectedHrDatapoints = mutableListOf<Pair<Double, Long>>()
 
+
     init {
         managerScope.launch {
             dataStoreManager.readThresholds().collect { thresholds ->
@@ -329,10 +330,10 @@ constructor(
         hrData.forEach { dataPoint ->
             collectedHrDatapoints.add(Pair(dataPoint.value, dataPoint.timeDurationFromBoot.toMillis()))
         }
-
+        Log.i("ExerciseClientManager", "Collected HR datapoints: ${collectedHrDatapoints.size}. Time? Windowstarttime ${windowStartTime} vs latest datapoint ${hrData.last().timeDurationFromBoot.toMillis()}")
         if(windowStartTime + 120000 <= hrData.last().timeDurationFromBoot.toMillis()) {
             hrAverage = collectedHrDatapoints.map { it.first }.average().roundToInt()
-            Log.i("ExerciseClientManager", "Average HR: $hrAverage")
+            Log.i("ExerciseClientManager", "Average HR: $hrAverage. hrMaxThresh: $hrMaxThresh")
             if(hrAverage >= hrMaxThresh) {
                 Log.i("ExerciseClientManager", "Heart rate exceeded threshold")
                 heartRateCriticalMutableFlow.value = true

@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -48,6 +49,7 @@ import androidx.wear.compose.material3.Text
 import androidx.wear.compose.ui.tooling.preview.WearPreviewDevices
 import com.example.healthapp.R
 import com.example.healthapp.data.ServiceState
+import com.example.healthapp.presentation.PanicViewModel
 import com.example.healthapp.presentation.component.CaloriesText
 import com.example.healthapp.presentation.component.DistanceText
 import com.example.healthapp.presentation.component.HRText
@@ -57,6 +59,7 @@ import com.example.healthapp.presentation.component.StartButton
 import com.example.healthapp.presentation.component.StopButton
 import com.example.healthapp.presentation.component.formatElapsedTime
 import com.example.healthapp.presentation.dialogs.ExerciseGoalMet
+import com.example.healthapp.presentation.dialogs.PanicDetectedAlert
 import com.example.healthapp.presentation.summary.SummaryScreenState
 import com.example.healthapp.presentation.theme.ThemePreview
 import com.example.healthapp.service.ExerciseServiceState
@@ -71,8 +74,23 @@ fun ExerciseRoute(
     modifier: Modifier = Modifier,
     onSummary: (SummaryScreenState) -> Unit,
     onRestart: () -> Unit,
-    onFinishActivity: () -> Unit
+    onFinishActivity: () -> Unit,
 ) {
+
+    val panicViewModel: PanicViewModel = hiltViewModel()
+
+    // 2. Beobachte den Panik-Zustand
+    val showPanicDialog = panicViewModel.isPanicDetected.collectAsState().value
+
+    // 3. Zeige den Alert-Dialog an, WENN showPanicDialog true ist
+    if (showPanicDialog) {
+        PanicDetectedAlert(
+            showDialog = showPanicDialog,
+            onPositive = { panicViewModel.confirmAssistance() },
+            onNegative = { panicViewModel.onDismissDialog() }
+        )
+    }
+
     val viewModel = hiltViewModel<ExerciseViewModel>()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
