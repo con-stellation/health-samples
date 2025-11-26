@@ -8,6 +8,7 @@ import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.Wearable
 import com.google.android.gms.wearable.WearableListenerService
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -19,8 +20,9 @@ import kotlinx.coroutines.tasks.await
 class MessageListener: WearableListenerService(), DataClient.OnDataChangedListener {
     val MEASURED_DATA = "/measured_data"
     val EXERCISE_PATH = "/exercise_choice"
-    val dataEvaluation = DataEvaluationService()
 
+    @Inject
+    lateinit var dataEvaluation : DataEvaluationService
     private val messageClient by lazy { Wearable.getMessageClient(this) }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)

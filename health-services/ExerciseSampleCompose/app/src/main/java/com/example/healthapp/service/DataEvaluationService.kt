@@ -8,13 +8,12 @@ import java.util.ArrayList
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class DataEvaluationService : LifecycleService(){
+class DataEvaluationService @Inject constructor(private val dataStoreManager: DataStoreManager): LifecycleService(){
 
     enum class DataIndices() {
-        STRESS_SCORE, RESTING_HR
+        RESTING_HR, STRESS_SCORE
     }
-    @Inject
-    lateinit var dataStoreManager: DataStoreManager
+
     val phoneAFriend = PhoneAFriend()
 
     suspend fun evaluateData(data: ArrayList<Int?>?) {

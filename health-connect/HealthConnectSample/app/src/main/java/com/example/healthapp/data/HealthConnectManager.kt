@@ -744,7 +744,7 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
 
             val result = dataClient.putDataItem(request).await()
 
-            Log.d("sendMessageToWatch", "DataItem saved: $result")
+            Log.d("sendMessageToWatch", "Data sent: ${listToSend}. DataItem saved: $result")
         } catch (cancellationException: CancellationException) {
             throw cancellationException
         } catch (exception: Exception) {
