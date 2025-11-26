@@ -72,11 +72,9 @@ import kotlin.reflect.KClass
 const val MIN_SUPPORTED_SDK = Build.VERSION_CODES.O_MR1
 
 /** Demonstrates reading and writing from Health Connect. */
-class HealthConnectManager(private val context: Context) {
+class HealthConnectManager(private val context: Context, private val dataStoreManager: DataStoreManager) {
     private val healthConnectClient by lazy { HealthConnectClient.getOrCreate(context) }
 
-    @Inject
-    lateinit var dataStoreManager: DataStoreManager
     private val changesDataTypes = setOf(
         ExerciseSessionRecord::class,
         StepsRecord::class,
@@ -175,6 +173,7 @@ class HealthConnectManager(private val context: Context) {
 
     suspend fun readHRV() {
         // TODO hier Average über die Woche berechnen und mit altem Wert vergleichen?
+        Log.i("HealthConnectManager", "reading HRV")
         var end = ZonedDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(1)
         var start = end
             .minusDays(7) // vielleicht lieber über eine noch längere Zeit?
@@ -194,9 +193,14 @@ class HealthConnectManager(private val context: Context) {
             recordType = HeartRateVariabilityRmssdRecord::class,
             timeRangeFilter = TimeRangeFilter.between(start.toInstant(), end.toInstant())
         )
-        val currentHrv = healthConnectClient.readRecords(request).records.map { it.heartRateVariabilityMillis }.average().roundToInt()
-        dataStoreManager.saveCurrentHrv(currentHrv)
-        dataStoreManager.saveHrvData(avg.toInt(), response.records.toString())
+
+        val currentHrv = healthConnectClient.readRecords(request).records.map { it.heartRateVariabilityMillis }.average()
+        if(!currentHrv.isNaN()) {
+            dataStoreManager.saveCurrentHrv(currentHrv.roundToInt())
+        }
+        if(!avg.isNaN()) {
+            dataStoreManager.saveHrvData(avg.toInt(), response.records.toString())
+        }
 
         Log.i("HealthConnectManager", "readHRV: ${response.records} avg: $avg current: $currentHrv")
     }
@@ -376,6 +380,33 @@ class HealthConnectManager(private val context: Context) {
     suspend fun deleteAllHrvData() {
         val now = Instant.now()
         healthConnectClient.deleteRecords(HeartRateVariabilityRmssdRecord::class, TimeRangeFilter.before(now))
+    }
+
+    suspend fun generateRestingHrData() {
+        val records = mutableListOf<Record>()
+        // Create 7 days worth of restingHR data
+        for (i in 0..7){
+            val measurementTime = ZonedDateTime.now().minusDays(i+1L).truncatedTo(ChronoUnit.DAYS)
+            val rhrRecord = RestingHeartRateRecord(
+                metadata = Metadata.manualEntry(),
+                time = measurementTime.toInstant(),
+                zoneOffset = measurementTime.offset,
+                beatsPerMinute = (60..85).shuffled().first().toLong()
+            )
+            records.add(rhrRecord)
+        }
+        healthConnectClient.insertRecords(records)
+        Log.i("HealthConnectManager", "Generated resting HR data: $records")
+    }
+
+    suspend fun deleteAllRestingHrData() {
+        val now = Instant.now()
+        healthConnectClient.deleteRecords(RestingHeartRateRecord::class, TimeRangeFilter.before(now))
+    }
+
+    suspend fun deleteAllExerciseData() {
+        val now = Instant.now()
+        healthConnectClient.deleteRecords(ExerciseSessionRecord::class, TimeRangeFilter.before(now))
     }
     /**
      * Reads sleep sessions for the previous seven days (from yesterday) to show a week's worth of
@@ -744,20 +775,22 @@ class HealthConnectManager(private val context: Context) {
         generateHrvData()
         generateSleepData()
         insertExerciseSession()
-
+        generateRestingHrData()
     }
 
     suspend fun deleteAllData() {
         Log.d("HealthConnectManager", "deleteAllData called")
         deleteAllHrvData()
         deleteAllSleepData() //klappt zumindest visuell nicht
-        val end = ZonedDateTime.now().truncatedTo(ChronoUnit.DAYS)
-        val start = end
-            .minusDays(30)
-        val readRecords = readExerciseSessions(start.toInstant(), end.toInstant())
-        readRecords.forEach { record ->
-            deleteExerciseSession(record.metadata.id)
-            readExerciseSessions(start.toInstant(), end.toInstant())
-        }
+        deleteAllRestingHrData()
+        deleteAllExerciseData()
+//        val end = ZonedDateTime.now().truncatedTo(ChronoUnit.DAYS)
+//        val start = end
+//            .minusDays(30)
+//        val readRecords = readExerciseSessions(start.toInstant(), end.toInstant())
+//        readRecords.forEach { record ->
+//            deleteExerciseSession(record.metadata.id)
+//            readExerciseSessions(start.toInstant(), end.toInstant())
+//        }
     }
 }

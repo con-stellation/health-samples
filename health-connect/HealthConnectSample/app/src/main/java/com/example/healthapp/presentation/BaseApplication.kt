@@ -16,10 +16,13 @@
 package com.example.healthapp.presentation
 
 import android.app.Application
+import com.example.healthapp.data.DataStoreManager
 import com.example.healthapp.data.HealthConnectManager
 
 class BaseApplication : Application() {
+    val dataStoreManager = DataStoreManager(this)
+
     val healthConnectManager by lazy {
-        HealthConnectManager(this)
+        HealthConnectManager(this, dataStoreManager)
     }
 }

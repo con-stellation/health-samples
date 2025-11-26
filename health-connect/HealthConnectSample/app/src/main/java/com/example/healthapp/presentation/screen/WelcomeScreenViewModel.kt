@@ -11,6 +11,7 @@ import androidx.health.connect.client.records.DistanceRecord
 import androidx.health.connect.client.records.ExerciseSessionRecord
 import androidx.health.connect.client.records.HeartRateRecord
 import androidx.health.connect.client.records.HeartRateVariabilityRmssdRecord
+import androidx.health.connect.client.records.RestingHeartRateRecord
 import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.health.connect.client.records.SpeedRecord
 import androidx.health.connect.client.records.StepsRecord
@@ -49,6 +50,8 @@ class WelcomeScreenViewModel (
         HealthPermission.getReadPermission(HeartRateVariabilityRmssdRecord::class),
         HealthPermission.getWritePermission(HeartRateVariabilityRmssdRecord::class),
         HealthPermission.getWritePermission(TotalCaloriesBurnedRecord::class),
+        HealthPermission.getReadPermission(RestingHeartRateRecord::class),
+        HealthPermission.getWritePermission(RestingHeartRateRecord::class),
         PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND
     )
 
@@ -69,8 +72,7 @@ class WelcomeScreenViewModel (
                 // Wenn die Berechtigungen fehlen, starte den Launcher.
                 // Der WelcomeScreen wird diesen Launcher beobachten und starten.
                 Log.d("WelcomeViewModel", "Permissions not granted. Preparing to launch permission request.")
-                // Wir müssen dem UI nichts weiter mitteilen, da die Activity das Ergebnis
-                // des Launchers abfängt und die Navigation entsprechend steuert.
+
             } else {
 
                 Log.d("WelcomeViewModel", "All permissions are already granted.")

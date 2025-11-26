@@ -13,8 +13,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-@Singleton
-class DataStoreManager @Inject constructor(@ApplicationContext private val context: Context){
+class DataStoreManager (private val context: Context){
     val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
     val EXERCISE_CHOICE = intPreferencesKey("exercise_choice")
     val HRVAvg = intPreferencesKey("hrv_avg")
