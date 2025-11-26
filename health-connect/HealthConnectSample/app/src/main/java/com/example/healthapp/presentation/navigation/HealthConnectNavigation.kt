@@ -147,6 +147,7 @@ fun HealthConnectNavigation(
                 onDeleteClick = { uid ->
                     viewModel.deleteExerciseSession(uid)
                 },
+                onLoadData = onPermissionsResult,
                 onError = { exception ->
                     showExceptionSnackbar(scaffoldState, scope, exception)
                 },

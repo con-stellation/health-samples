@@ -69,12 +69,9 @@ class WelcomeScreenViewModel (
             val hasPermissions = healthConnectManager.hasAllPermissions(permissions)
             permissionsGranted.value = hasPermissions
             if (!hasPermissions) {
-                // Wenn die Berechtigungen fehlen, starte den Launcher.
-                // Der WelcomeScreen wird diesen Launcher beobachten und starten.
                 Log.d("WelcomeViewModel", "Permissions not granted. Preparing to launch permission request.")
 
             } else {
-
                 Log.d("WelcomeViewModel", "All permissions are already granted.")
                 healthDataCenter.fetchHealthData(exerciseSessionVM)
             }

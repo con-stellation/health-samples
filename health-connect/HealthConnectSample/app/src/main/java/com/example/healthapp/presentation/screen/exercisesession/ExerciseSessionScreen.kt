@@ -15,6 +15,7 @@
  */
 package com.example.healthapp.presentation.screen.exercisesession
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,8 +26,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,6 +40,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.health.connect.client.permission.HealthPermission.Companion.PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND
 import androidx.health.connect.client.records.ExerciseSessionRecord
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.healthapp.R
 import com.example.healthapp.data.ExerciseSession
 import com.example.healthapp.data.HealthConnectAppInfo
@@ -58,10 +66,36 @@ fun ExerciseSessionScreen(
     onInsertClick: () -> Unit = {},
     onDetailsClick: (String) -> Unit = {},
     onDeleteClick: (String) -> Unit = {},
+    onLoadData: () -> Unit = {},
     onError: (Throwable?) -> Unit = {},
     onPermissionsResult: () -> Unit = {},
-    onPermissionsLaunch: (Set<String>) -> Unit = {}
+    onPermissionsLaunch: (Set<String>) -> Unit = {},
+    lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current
 ) {
+
+    val currentOnLoadData by rememberUpdatedState(onLoadData)
+    // Add a listener to re-check whether Health Connect has been installed each time the Welcome
+    // screen is resumed: This ensures that if the user has been redirected to the Play store and
+    // followed the onboarding flow, then when the app is resumed, instead of showing the message
+    // to ask the user to install Health Connect, the app recognises that Health Connect is now
+    // available and shows the appropriate welcome.
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                Log.d("WelcomeScreen", "LoadData???")
+                currentOnLoadData()
+            }
+        }
+
+        // Add the observer to the lifecycle
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        // When the effect leaves the Composition, remove the observer
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     // Remember the last error ID, such that it is possible to avoid re-launching the error
     // notification for the same error when the screen is recomposed, or configuration changes etc.
@@ -81,6 +115,8 @@ fun ExerciseSessionScreen(
             onError(uiState.exception)
             errorId.value = uiState.uuid
         }
+
+
     }
 
     if (uiState != ExerciseSessionViewModel.UiState.Uninitialized) {
