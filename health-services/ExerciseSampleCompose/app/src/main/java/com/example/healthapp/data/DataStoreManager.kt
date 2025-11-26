@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 enum class DataIndices() {
-    STRESS_SCORE, HRV, RESTING_HR
+    RESTING_HR, STRESS_SCORE
 }
 
 @Singleton
@@ -38,7 +38,6 @@ class DataStoreManager @Inject constructor(@ApplicationContext private val conte
         list
     }
 
-
     suspend fun saveExerciseChoice(choice: Int) {
         context.dataStore.updateData {
             it.toMutablePreferences().also { preferences ->
@@ -50,10 +49,9 @@ class DataStoreManager @Inject constructor(@ApplicationContext private val conte
     suspend fun saveHealthData(data: ArrayList<Int?>?) {
         context.dataStore.updateData {
             it.toMutablePreferences().also { preferences ->
-                preferences[HRV] = data?.get(DataIndices.HRV.ordinal) ?: 200
-                preferences[STRESS_SCORE] = data?.get(DataIndices.STRESS_SCORE.ordinal) ?:75
+                //preferences[HRV] = data?.get(DataIndices.HRV.ordinal) ?: 200
                 preferences[RESTING_HR] = data?.get(DataIndices.RESTING_HR.ordinal) ?:60
-
+                preferences[STRESS_SCORE] = data?.get(DataIndices.STRESS_SCORE.ordinal) ?:50
             }
         }
     }

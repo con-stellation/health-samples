@@ -11,24 +11,28 @@ import javax.inject.Inject
 class DataEvaluationService : LifecycleService(){
 
     enum class DataIndices() {
-        STRESS_SCORE, HRV, RESTING_HR
+        STRESS_SCORE, RESTING_HR
     }
     @Inject
     lateinit var dataStoreManager: DataStoreManager
+    val phoneAFriend = PhoneAFriend()
 
-    // TODO hier noch die empfangenen Datem richtigstellen (nicht nur Threshold sondern auch was mit dem Stressscore passiert)
     suspend fun evaluateData(data: ArrayList<Int?>?) {
-        Log.i("DataEvaluationService", "Received data: $data")
+        Log.i("DataEvaluationService", "Evaluating data: $data")
         dataStoreManager.saveHealthData(data)
+        val stressscore = data?.get(DataIndices.STRESS_SCORE.ordinal) ?:50
+        if(stressscore > 70) {
+            phoneAFriend.sendMessageToContact(false, stressscore)
+        }
         val restingHr = data?.get(DataIndices.RESTING_HR.ordinal) ?:70
         val thresh = dataStoreManager.readThresholds()
         val thresholds = ArrayList<Int?>()
-        thresholds.add(restingHr + 20) // TODO auch anpassen je nach Minimum oder immer "aktuellen" nehmen?
+        thresholds.add(restingHr + 15) // TODO auch anpassen je nach Minimum oder immer "aktuellen" nehmen? --> Der Aktuelle ist ja ein Durchschnittswert der letzten 7 Tage also ist das so schon okay
 
         thresh.collect {
             it.get(1)?.let { it1 ->
-                if(it1 > (restingHr + 40)) {
-                    thresholds.add(restingHr + 40)
+                if(it1 > (restingHr + 30)) {
+                    thresholds.add(restingHr + 30)
                 } else {
                     thresholds.add(it1)
                 }

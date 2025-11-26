@@ -697,8 +697,10 @@ class HealthConnectManager(private val context: Context) {
             timeRangeFilter = TimeRangeFilter.between(start.toInstant(), end.toInstant())
         )
 
-        val restingHR = healthConnectClient.readRecords(request).records.map { it.beatsPerMinute }.average()
-        Log.d("sendMessageToWatch", "restingHR: $restingHR")
+        val restingHrData = healthConnectClient.readRecords(request).records.map { it.beatsPerMinute }
+        val restingHR = restingHrData.average()
+
+        Log.d("sendMessageToWatch", "restingHR: $restingHrData")
         val listToSend = arrayOf(restingHR.toInt(), stressIndex).toMutableList()
 
         try {
