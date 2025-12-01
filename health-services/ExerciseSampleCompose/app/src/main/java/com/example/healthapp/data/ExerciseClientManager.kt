@@ -83,11 +83,11 @@ constructor(
     healthServicesClient: HealthServicesClient,
     private val logger: ExerciseLogger,
     private val vibrator: Vibrator,
-    private val dataStoreManager: DataStoreManager
+    private val dataStoreManager: DataStoreManager,
+    private val realityCheck: RealityCheck
 ) {
     val exerciseClient: ExerciseClient = healthServicesClient.exerciseClient
     var breathingExerciseJob: Job? = null
-    val realityCheck: RealityCheck = RealityCheck()
     private val managerScope = CoroutineScope(Dispatchers.Default)
     var hrMaxThresh = 0
     private set
@@ -106,8 +106,8 @@ constructor(
     init {
         managerScope.launch {
             dataStoreManager.readThresholds().collect { thresholds ->
-                hrMaxThresh = thresholds[1] ?: 100
-                hrMinThresh = thresholds[0] ?: 70
+                hrMaxThresh = thresholds[1] ?: 75 // TODO defaultwerte überall angleichen
+                hrMinThresh = thresholds[0] ?: 60
             }
         }
     }

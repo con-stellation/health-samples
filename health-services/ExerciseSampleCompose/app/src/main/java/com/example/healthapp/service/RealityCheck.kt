@@ -11,13 +11,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-class RealityCheck {
+class RealityCheck @Inject constructor(private val dataStoreManager: DataStoreManager){
     private var vibrationJob: Job? = null
-    @Inject
-    lateinit var dataStoreManager: DataStoreManager
 
     var timings: LongArray = longArrayOf(
         4000, 7000, 8000)
@@ -54,12 +54,10 @@ class RealityCheck {
 
      fun executeVibration(coroutineScope: CoroutineScope, vibrator: Vibrator): Job {
         stopVibrating(vibrator)
-
+        Log.i("RealityCheck", "stopped previous vibration job.")
         vibrationJob = coroutineScope.launch(Dispatchers.Default) {
             val choice = dataStoreManager.readExerciseChoice()
-            choice.collect {
-                setExercise(it)
-            }
+            setExercise(choice.first())
             val repeatIndex = -1
 
             try {
@@ -68,6 +66,7 @@ class RealityCheck {
                     vibrator.vibrate(
                         VibrationEffect.createWaveform(
                             timings, amplitudes, repeatIndex))
+                    delay(timings.sum()+1)
                 }
             }
             finally {

@@ -79,10 +79,8 @@ fun ExerciseRoute(
 
     val panicViewModel: PanicViewModel = hiltViewModel()
 
-    // 2. Beobachte den Panik-Zustand
     val showPanicDialog = panicViewModel.isPanicDetected.collectAsState().value
 
-    // 3. Zeige den Alert-Dialog an, WENN showPanicDialog true ist
     if (showPanicDialog) {
         PanicDetectedAlert(
             showDialog = showPanicDialog,
@@ -177,44 +175,44 @@ fun ExerciseScreen(
     val pagerState = rememberPagerState(
         initialPage = 1, pageCount = { 2 })
 
-        HorizontalPagerScaffold(pagerState = pagerState) {
-            HorizontalPager(
-                state = pagerState
-            ) { page ->
-                ScreenScaffold {
-                        if (page == 0) {
-                            ExerciseControlButtons(
-                                uiState = uiState,
-                                onStartClick = onStartClick,
-                                onEndClick = onEndClick,
-                                onResumeClick = {
-                                    onResumeClick()
-                                    coroutineScope.launch {
-                                        pagerState.animateScrollToPage(1)
-                                    }
-                                },
-                                onPauseClick = {
-                                    onPauseClick()
-                                    coroutineScope.launch {
-                                        pagerState.animateScrollToPage(1)
-                                    }
+    HorizontalPagerScaffold(pagerState = pagerState) {
+        HorizontalPager(
+            state = pagerState
+        ) { page ->
+            ScreenScaffold {
+                    if (page == 0) {
+                        ExerciseControlButtons(
+                            uiState = uiState,
+                            onStartClick = onStartClick,
+                            onEndClick = onEndClick,
+                            onResumeClick = {
+                                onResumeClick()
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(1)
                                 }
-                            )
-                        } else {
-                            ExerciseMetrics(uiState = uiState)
-                        }
+                            },
+                            onPauseClick = {
+                                onPauseClick()
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(1)
+                                }
+                            }
+                        )
+                    } else {
+                        ExerciseMetrics(uiState = uiState)
                     }
                 }
-
-            // If we meet an exercise goal, show our exercise met dialog.
-            // This approach is for the sample, and doesn't guarantee processing of this event in all cases,
-            // such as the user exiting the app while this is in-progress. Consider alternatives to exposing
-            // state in a production app.
-            uiState.exerciseState?.exerciseGoal?.let {
-                //Log.d("ExerciseGoalMet", "Showing exercise goal met dialog")
-                ExerciseGoalMet(it.isNotEmpty())
             }
+
+        // If we meet an exercise goal, show our exercise met dialog.
+        // This approach is for the sample, and doesn't guarantee processing of this event in all cases,
+        // such as the user exiting the app while this is in-progress. Consider alternatives to exposing
+        // state in a production app.
+        uiState.exerciseState?.exerciseGoal?.let {
+            //Log.d("ExerciseGoalMet", "Showing exercise goal met dialog")
+            ExerciseGoalMet(it.isNotEmpty())
         }
+    }
 }
 
 @Composable

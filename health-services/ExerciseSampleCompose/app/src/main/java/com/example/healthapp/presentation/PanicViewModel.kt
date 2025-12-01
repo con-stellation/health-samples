@@ -32,7 +32,7 @@ constructor(
 
     fun confirmAssistance() {
         exerciseClientManager.startBreathingExercise()
-        resetDialog()
+        isPanicDetected_Mutable.value = false
     }
 
     fun onDismissDialog() {
