@@ -19,7 +19,7 @@ fun PanicDetectedAlert (
         visible = showDialog,
         onDismissRequest = onNegative,
         title = { Text(stringResource(id = R.string.panic_detected))},
-        text = {Text(stringResource(id = R.string.panic_detected))},
+        text = {Text(stringResource(id = R.string.assistance_needed))},
             confirmButton = {
                 Button(
                     onClick = onPositive

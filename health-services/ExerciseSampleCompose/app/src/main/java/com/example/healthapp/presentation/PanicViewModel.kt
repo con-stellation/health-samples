@@ -20,23 +20,36 @@ constructor(
 
     private val isPanicDetected_Mutable = MutableStateFlow(false)
     val isPanicDetected = isPanicDetected_Mutable.asStateFlow()
+    var oldPanicDetectedValue = false
+    var showInterventionDialog = false
 
     init {
         viewModelScope.launch {
             exerciseClientManager.heartRateCritical.collect { isCritical ->
                 Log.i("PanicViewModel", "Heart rate critical state changed: $isCritical")
                 isPanicDetected_Mutable.value = isCritical
+                if((!isCritical && oldPanicDetectedValue) || exerciseClientManager.tenMinutesPassed) {
+                    Log.i("PanicViewModel", "isCritical: $isCritical, oldPanicDetectedValue: $oldPanicDetectedValue, tenMinutesPassed: ${exerciseClientManager.tenMinutesPassed}")
+                    showInterventionDialog = true
+                }
+                oldPanicDetectedValue = isCritical
             }
+
         }
     }
 
     fun confirmAssistance() {
-        exerciseClientManager.startBreathingExercise()
+        showInterventionDialog = false
+        exerciseClientManager.tenMinutesPassed = false
         isPanicDetected_Mutable.value = false
+        exerciseClientManager.startBreathingExercise()
     }
 
     fun onDismissDialog() {
         // Schließe den Dialog und setze den Zustand im Manager zurück.
+        showInterventionDialog = false
+        exerciseClientManager.tenMinutesPassed = false
+        exerciseClientManager.stopBreathingExercise()
         exerciseClientManager.updateHeartRateThreshold()
         resetDialog()
     }

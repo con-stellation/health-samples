@@ -62,7 +62,7 @@ class DataStoreManager @Inject constructor(@ApplicationContext private val conte
         context.dataStore.updateData {
             it.toMutablePreferences().also { preferences ->
                 preferences[HR_MAX_THRESH] = data?.get(1) ?:100
-                preferences[HR_MIN_THRESH] = data?.get(0) ?:60
+                preferences[HR_MIN_THRESH] = data?.get(0) ?:70
             }
         }
     }

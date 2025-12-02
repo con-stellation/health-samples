@@ -18,6 +18,9 @@ package com.example.healthapp.service
 import android.content.ContentValues.TAG
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
@@ -72,7 +75,7 @@ class ExerciseService : LifecycleService() {
      */
     suspend fun startExercise() {
         postOngoingActivityNotification()
-        exerciseClientManager.startExercise()
+        exerciseClientManager.startHrMonitoring()
     }
 
     /**
@@ -97,13 +100,6 @@ class ExerciseService : LifecycleService() {
         removeOngoingActivityNotification()
     }
 
-    /** Wear OS 3.0 reserves two buttons for the OS. For devices with more than 2 buttons,
-     * consider implementing a "press" to mark lap feature**/
-    fun markLap() {
-        lifecycleScope.launch {
-            exerciseClientManager.markLap()
-        }
-    }
 
     override fun onStartCommand(
         intent: Intent?,
@@ -233,4 +229,5 @@ class ExerciseService : LifecycleService() {
     companion object {
         private val UNBIND_DELAY = 3.seconds
     }
+
 }

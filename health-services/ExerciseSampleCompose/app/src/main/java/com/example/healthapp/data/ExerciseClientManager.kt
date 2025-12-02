@@ -18,11 +18,13 @@ package com.example.healthapp.data
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import androidx.concurrent.futures.await
-import android.os.VibrationEffect
 import android.os.Vibrator
 import android.util.Log
-import androidx.compose.runtime.MutableState
 import androidx.health.services.client.ExerciseClient
 import androidx.health.services.client.ExerciseUpdateCallback
 import androidx.health.services.client.HealthServicesClient
@@ -84,7 +86,8 @@ constructor(
     private val logger: ExerciseLogger,
     private val vibrator: Vibrator,
     private val dataStoreManager: DataStoreManager,
-    private val realityCheck: RealityCheck
+    private val realityCheck: RealityCheck,
+    private val sensorManager: SensorManager
 ) {
     val exerciseClient: ExerciseClient = healthServicesClient.exerciseClient
     var breathingExerciseJob: Job? = null
@@ -98,11 +101,12 @@ constructor(
 
     private val heartRateCriticalMutableFlow = MutableStateFlow(false)
     val heartRateCritical = heartRateCriticalMutableFlow.asStateFlow()
-
+    var tenMinutesPassed = false
     private var windowStartTime: Long = 0L
     private var collectedHrDatapoints = mutableListOf<Pair<Double, Long>>()
+    private var thresholds = Thresholds(0.0, Duration.ZERO)
 
-
+    private var heartRateSensor: Sensor?=null
     init {
         managerScope.launch {
             dataStoreManager.readThresholds().collect { thresholds ->
@@ -111,6 +115,7 @@ constructor(
             }
         }
     }
+
     suspend fun getExerciseCapabilities(): ExerciseTypeCapabilities? {
         val capabilities = exerciseClient.getCapabilities()
 
@@ -120,8 +125,6 @@ constructor(
             null
         }
     }
-
-    private var thresholds = Thresholds(0.0, Duration.ZERO)
 
     fun updateGoals(newThresholds: Thresholds) {
         thresholds = newThresholds.copy()
@@ -244,6 +247,7 @@ constructor(
         logger.log("Ending exercise")
         collectedHrDatapoints.clear()
         windowStartTime = 0L
+        stopHrMonitoring()
         exerciseClient.endExercise()
     }
 
@@ -255,14 +259,6 @@ constructor(
     suspend fun resumeExercise() {
         logger.log("Resuming exercise")
         exerciseClient.resumeExercise()
-    }
-
-    /** Wear OS 3.0 reserves two buttons for the OS. For devices with more than 2 buttons,
-     * consider implementing a "press" to mark lap feature**/
-    suspend fun markLap() {
-        if (exerciseClient.isExerciseInProgress()) {
-            exerciseClient.markLap()
-        }
     }
 
     /**
@@ -333,14 +329,15 @@ constructor(
         Log.i("ExerciseClientManager", "Collected HR datapoints: ${collectedHrDatapoints.size}. Time? Windowstarttime ${windowStartTime} vs latest datapoint ${hrData.last().timeDurationFromBoot.toMillis()}")
         if(windowStartTime + 120000 <= hrData.last().timeDurationFromBoot.toMillis()) {
             hrAverage = collectedHrDatapoints.map { it.first }.average().roundToInt()
-            Log.i("ExerciseClientManager", "Average HR: $hrAverage. hrMaxThresh: $hrMaxThresh")
+            // TODO entfernen. Temporäre hrMinThresh für Testing Zwecke...
+            hrMinThresh = 110
+            Log.i("ExerciseClientManager", "Average HR: $hrAverage. hrMaxThresh: $hrMaxThresh, hrMinThresh: $hrMinThresh")
             if(hrAverage >= hrMaxThresh) {
                 Log.i("ExerciseClientManager", "Heart rate exceeded threshold")
                 heartRateCriticalMutableFlow.value = true
-            }
-            if(hrAverage <= hrMinThresh) {
-                realityCheck.stopVibrating(vibrator)
-                breathingExerciseJob = null
+            } else if (hrAverage <= hrMinThresh){
+                Log.i("ExerciseClientManager", "Heart rate below threshold")
+                heartRateCriticalMutableFlow.value = false
             }
 
             collectedHrDatapoints.clear()
@@ -353,13 +350,23 @@ constructor(
         if (breathingExerciseJob?.isActive != true) {
             Log.i("ExerciseClientManager", "Starting breathing exercise")
             //val startTime = System.currentTimeMillis()
-            breathingExerciseJob = realityCheck.executeVibration(managerScope, vibrator)
             managerScope.launch {
-                delay(60000 * 10)
-                if (breathingExerciseJob?.isActive == true) {
-                    realityCheck.stopVibrating(vibrator)
-                }
+                delay(60000 * 10) // wait 10 min and ask again
+                // TODO how to signal panicViewModel that we need to show dialog...
+                Log.i("ExerciseClientManager", "10 minutes have passed...")
+                tenMinutesPassed = true
             }
+            breathingExerciseJob = realityCheck.executeVibration(managerScope, vibrator)
+
+        }
+    }
+
+    fun stopBreathingExercise() {
+        if (breathingExerciseJob?.isActive == true) {
+            Log.i("ExerciseClientManager", "Stopping breathing exercise")
+                    realityCheck.stopVibrating(vibrator)
+            breathingExerciseJob?.cancel()
+            breathingExerciseJob = null
         }
     }
 
@@ -370,8 +377,78 @@ constructor(
     fun updateHeartRateThreshold() {
         hrMaxThresh = hrAverage
     }
-}
 
+    private val sensorListener = object : SensorEventListener {
+        override fun onAccuracyChanged(p0: Sensor?, p1: Int) {
+            Log.i("ExerciseClientManager", "Sensor accuracy changed: $p1")
+        }
+
+        override fun onSensorChanged(event: SensorEvent?) {
+            if (event?.sensor?.type == Sensor.TYPE_HEART_RATE) {
+                val heartRate = event.values[0]
+                if (heartRate > 0) { // Ignoriere ungültige Werte
+                    val currentTime = System.currentTimeMillis()
+                    Log.i(
+                        "ExerciseClientManager",
+                        "Heart rate via Sensor: $heartRate, Time: $currentTime"
+                    )
+
+                    collectedHrDatapoints.clear()
+                    windowStartTime = 0L
+
+
+                    // 1. Neuen Punkt zum DTW-Fenster hinzufügen
+//                    hrDtwWindow.add(heartRate.toDouble() to currentTime)
+//
+//                    // 2. Alte Punkte entfernen
+//                    hrDtwWindow.removeAll { it.second < currentTime - dtwWindowMs }
+//
+//                    // 3. DTW-Analyse starten
+//                    if (hrDtwWindow.size > 20) {
+//                        runDtwAnalysis()
+//                    }
+                }
+            }
+        }
+    }
+
+    suspend fun startHrMonitoring() {
+        heartRateSensor = sensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE)
+        if (heartRateSensor == null) {
+            val sensorList = sensorManager.getSensorList(Sensor.TYPE_ALL)
+            Log.e("ExerciseClientManager", "No heartrate sensor detected. Sensors: $sensorList")
+            return
+        }
+
+        val samplingRate = SensorManager.SENSOR_DELAY_GAME // vieeeel zu schnell tbh ich brauch nur 1Hz für den WESAD Datensatz
+        sensorManager.registerListener(sensorListener, heartRateSensor, samplingRate)
+
+        // hier wird die Companionapp gestartet
+        val exec : Executor = Executors.newSingleThreadExecutor()
+        val connectedNodes = Tasks.await(Wearable.getNodeClient(applicationContext).connectedNodes)
+        Log.i("ExerciseClientManager", "Connected nodes: $connectedNodes. Trying to start remote companion.")
+        if(!connectedNodes.isEmpty()){
+            val remoteActivityHelper = RemoteActivityHelper(applicationContext, exec)
+            val remoteResult = remoteActivityHelper.startRemoteActivity(
+                Intent(Intent.ACTION_VIEW).addCategory(Intent.CATEGORY_BROWSABLE).setData("companionapp://sms92".toUri()),
+                connectedNodes[0].id
+            ).await()
+
+            try {
+                Log.i("WearOSRemote", "Remote Activity Started?")
+            } catch (e: Exception) {
+                Log.e("WearOSRemote", "Fehler beim Starten der Remote Activity", e)
+            }
+        } else {
+            Log.i("ExerciseClientService", "No connected devices detected. Cannot launch remote Companion.")
+        }
+    }
+
+    private fun stopHrMonitoring() {
+        sensorManager.unregisterListener(sensorListener)
+        Log.i("DTW_Sensor", "SensorListener deregistriert.")
+    }
+}
 
 
 private fun logMetrics(metrics: DataPointContainer) {

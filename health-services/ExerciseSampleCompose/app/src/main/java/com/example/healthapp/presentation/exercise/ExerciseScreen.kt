@@ -50,15 +50,12 @@ import androidx.wear.compose.ui.tooling.preview.WearPreviewDevices
 import com.example.healthapp.R
 import com.example.healthapp.data.ServiceState
 import com.example.healthapp.presentation.PanicViewModel
-import com.example.healthapp.presentation.component.CaloriesText
-import com.example.healthapp.presentation.component.DistanceText
 import com.example.healthapp.presentation.component.HRText
 import com.example.healthapp.presentation.component.PauseButton
 import com.example.healthapp.presentation.component.ResumeButton
 import com.example.healthapp.presentation.component.StartButton
 import com.example.healthapp.presentation.component.StopButton
 import com.example.healthapp.presentation.component.formatElapsedTime
-import com.example.healthapp.presentation.dialogs.ExerciseGoalMet
 import com.example.healthapp.presentation.dialogs.PanicDetectedAlert
 import com.example.healthapp.presentation.summary.SummaryScreenState
 import com.example.healthapp.presentation.theme.ThemePreview
@@ -80,10 +77,11 @@ fun ExerciseRoute(
     val panicViewModel: PanicViewModel = hiltViewModel()
 
     val showPanicDialog = panicViewModel.isPanicDetected.collectAsState().value
+    val checkIfStillNeeded = panicViewModel.showInterventionDialog
 
-    if (showPanicDialog) {
+    if (showPanicDialog || checkIfStillNeeded) {
         PanicDetectedAlert(
-            showDialog = showPanicDialog,
+            showDialog = (true),
             onPositive = { panicViewModel.confirmAssistance() },
             onNegative = { panicViewModel.onDismissDialog() }
         )
@@ -199,40 +197,32 @@ fun ExerciseScreen(
                             }
                         )
                     } else {
-                        ExerciseMetrics(uiState = uiState)
+                        ExerciseMetrics(uiState = uiState, onEndClick = onEndClick)
                     }
                 }
             }
 
-        // If we meet an exercise goal, show our exercise met dialog.
-        // This approach is for the sample, and doesn't guarantee processing of this event in all cases,
-        // such as the user exiting the app while this is in-progress. Consider alternatives to exposing
-        // state in a production app.
-        uiState.exerciseState?.exerciseGoal?.let {
-            //Log.d("ExerciseGoalMet", "Showing exercise goal met dialog")
-            ExerciseGoalMet(it.isNotEmpty())
-        }
     }
 }
 
 @Composable
 private fun ExerciseMetrics(
     uiState: ExerciseScreenState,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onEndClick: () -> Unit
 ) {
     Column(
         modifier = modifier
             .fillMaxSize()
             .padding(vertical = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         HeartRateRow(uiState)
 
-        CaloriesRow(uiState)
-
-        DistanceAndLapsRow(uiState)
-
         DurationRow(uiState)
+
+        StopButton(onEndClick = onEndClick)
     }
 }
 
@@ -267,18 +257,6 @@ private fun ExerciseControlButtons(
 }
 
 @Composable
-private fun DistanceAndLapsRow(uiState: ExerciseScreenState) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceAround
-    ) {
-        Row {
-            DistanceText(uiState.exerciseState?.exerciseMetrics?.distance)
-        }
-    }
-}
-
-@Composable
 private fun HeartRateRow(uiState: ExerciseScreenState) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -289,15 +267,6 @@ private fun HeartRateRow(uiState: ExerciseScreenState) {
                 hr = uiState.exerciseState?.exerciseMetrics?.heartRate
             )
         }
-    }
-}
-
-@Composable
-private fun CaloriesRow(uiState: ExerciseScreenState) {
-    Row {
-        CaloriesText(
-            uiState.exerciseState?.exerciseMetrics?.calories
-        )
     }
 }
 
@@ -328,6 +297,7 @@ private fun DurationRow(uiState: ExerciseScreenState) {
         }
     }
 }
+
 
 @WearPreviewDevices
 @Composable
