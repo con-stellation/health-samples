@@ -98,7 +98,7 @@ constructor(
 
     private val heartRateCriticalMutableFlow = MutableStateFlow(false)
     val heartRateCritical = heartRateCriticalMutableFlow.asStateFlow()
-
+    var tenMinutesPassed = false
     private var windowStartTime: Long = 0L
     private var collectedHrDatapoints = mutableListOf<Pair<Double, Long>>()
 
@@ -339,8 +339,7 @@ constructor(
                 heartRateCriticalMutableFlow.value = true
             }
             if(hrAverage <= hrMinThresh) {
-                realityCheck.stopVibrating(vibrator)
-                breathingExerciseJob = null
+                heartRateCriticalMutableFlow.value = false
             }
 
             collectedHrDatapoints.clear()
@@ -355,11 +354,20 @@ constructor(
             //val startTime = System.currentTimeMillis()
             breathingExerciseJob = realityCheck.executeVibration(managerScope, vibrator)
             managerScope.launch {
-                delay(60000 * 10)
-                if (breathingExerciseJob?.isActive == true) {
-                    realityCheck.stopVibrating(vibrator)
-                }
+                delay(60000 * 10) // wait 10 min and ask again
+                // TODO how to signal panicViewModel that we need to show dialog...
+                tenMinutesPassed = true
+
             }
+        }
+    }
+
+    fun stopBreathingExercise() {
+        if (breathingExerciseJob?.isActive == true) {
+            Log.i("ExerciseClientManager", "Stopping breathing exercise")
+                    realityCheck.stopVibrating(vibrator)
+            breathingExerciseJob?.cancel()
+            breathingExerciseJob = null
         }
     }
 
