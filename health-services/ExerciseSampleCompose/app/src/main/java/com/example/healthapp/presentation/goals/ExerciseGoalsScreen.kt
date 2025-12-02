@@ -87,73 +87,18 @@ fun ExerciseGoalsScreen(
             state = columnState
         ) {
             item {
-                SwitchButton(
-                    checked = showDistanceRow.expanded,
-                    onCheckedChange = { showDistanceRow.expanded = it },
-                    label = { Text(stringResource(R.string.distance)) },
-                    icon = {
-                        Icon(
-                            Icons.Default.LocationOn,
-                            contentDescription = stringResource(R.string.distance)
-                        )
-                    },
-                    secondaryLabel = {
-                        if (showDistanceRow.expanded) {
-                            Text(
-                                "${
-                                    thresholds.distance
-                                }" + stringResource(R.string.km)
-                            )
-                        } else {
-                            null
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-            item {
                 DistanceGoalSlider(thresholds.distance) { newValue ->
                     thresholds =
                         thresholds.copy(distance = newValue.toDouble(), distanceIsSet = true)
                 }
             }
-            item {
-                SwitchButton(
-                    checked = showDurationRow.expanded,
-                    onCheckedChange = { showDurationRow.expanded = it },
-                    label = { Text(stringResource(R.string.duration)) },
-                    icon = { Icon(Icons.Default.Timer, contentDescription = "Timer") },
-                    //  toggleControl = ToggleChipToggleControl.Switch,
-                    secondaryLabel = {
-                        if (showDurationRow.expanded) {
-                            Text(
-                                "${
-                                    thresholds.duration.inWholeMinutes
-                                }" + stringResource(R.string.minutes)
-                            )
-                        } else {
-                            null
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
+
             item {
                 DurationGoalSlider(thresholds.duration) { newValue ->
                     thresholds = thresholds.copy(
                         duration = newValue, durationIsSet = true
                     )
                 }
-            }
-            item {
-                CompactButton(
-                    label = { Text(stringResource(R.string.set_goal)) },
-                    // Set the goal and pass the values to the view model
-                    onClick = {
-                        setGoals(thresholds)
-                        onSet() // Close the screen
-                    }
-                )
             }
         }
     }
@@ -171,12 +116,6 @@ fun DistanceGoalSlider(distanceValue: Double, onDistanceValueChange: (Float) -> 
         // custom values or adjust the units.
         steps = 9,
         valueRange = 0.0f..10.0f,
-        increaseIcon = {
-            IncreaseIcon()
-        },
-        decreaseIcon = {
-            DecreaseIcon()
-        },
         modifier = Modifier.fillMaxWidth()
     )
 }
@@ -192,33 +131,10 @@ fun DurationGoalSlider(durationValue: Duration, onDurationValueChange: (Duration
         // custom times
         steps = 11,
         valueRange = 0.0f..60.0f,
-        increaseIcon = {
-            IncreaseIcon()
-        },
-        decreaseIcon = {
-            DecreaseIcon()
-        },
         modifier = Modifier.fillMaxWidth()
     )
 }
 
-@Composable
-fun IncreaseIcon() {
-    Icon(
-        modifier = Modifier.size(26.dp),
-        imageVector = Icons.Default.Add,
-        contentDescription = stringResource(R.string.increase)
-    )
-}
-
-@Composable
-fun DecreaseIcon() {
-    Icon(
-        modifier = Modifier.size(26.dp),
-        imageVector = Icons.Default.Remove,
-        contentDescription = stringResource(R.string.decrease)
-    )
-}
 
 @WearPreviewDevices
 @Composable

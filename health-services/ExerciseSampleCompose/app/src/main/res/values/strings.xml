@@ -25,24 +25,11 @@
     <string name="unknown_error">Unknown error</string>
     <string name="try_again">Would you like to try again?</string>
 
-    <!-- GPS -->
-    <string name="GPS_acquiring">GPS Acquiring…</string>
-    <string name="GPS_acquired">GPS Acquired!</string>
-    <string name="GPS_disabled">GPS Disabled on Device</string>
-    <string name="GPS_unavailable">GPS Unavailable</string>
-    <string name="GPS_initializing">GPS Initializing…</string>
-
-
     <!-- Summary Screen -->
-    <string name="workout_complete">Workout complete!</string>
-    <string name="duration"> Duration </string>
-    <string name="distance"> Distance </string>
-    <string name="calories"> kCal </string>
     <string name="avgHR"> AvgHR </string>
     <string name="restart">Restart</string>
 
     <!-- Descriptions -->
-    <string name="laps">Laps</string>
     <string name="start_button_cd">Start</string>
     <string name="stop_button_cd">End</string>
     <string name="pause_button_cd">Pause</string>
@@ -59,19 +46,7 @@
     <string name="panic_detected">Monitoring in process</string>
     <string name="assistance_needed">Do you require assistance?</string>
 
-
-    <!-- Exercise Goals -->
-    <string name="km"> km</string>
-    <string name="minutes"> min</string>
-    <string name="goal"> Add Goal</string>
-    <string name="set_goal">Set Goals</string>
-    <string name="plus"> Plus </string>
-    <string name="minus"> Minus </string>
-    <string name="increase">Increase</string>
-    <string name="decrease">Decrease</string>
-
     <!-- Exercise Goal Met Dialog -->
-    <string name="goal_achieved">Goal achieved!</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
 </resources>

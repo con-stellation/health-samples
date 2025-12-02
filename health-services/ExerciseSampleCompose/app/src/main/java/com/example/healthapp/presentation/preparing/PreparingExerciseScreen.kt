@@ -146,11 +146,6 @@ fun PreparingExerciseScreen(
         modifier = Modifier
             .ambientGray(ambientState)
     ) { contentPadding ->
-        LocationStatusText(
-            updatePrepareLocationStatus(
-                locationAvailability = location ?: LocationAvailability.UNAVAILABLE
-            )
-        )
         TransformingLazyColumn(
             state = columnState,
             contentPadding = contentPadding
@@ -187,45 +182,7 @@ fun PreparingExerciseScreen(
                     }
                 }
             }
-            item {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 6.dp),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    CompactButton(
-                        label = { Text(stringResource(id = R.string.goal)) },
-                        onClick = onGoals
-                    )
-                }
-            }
         }
-    }
-}
-
-/**Return [LocationAvailability] value code as a string**/
-
-@Composable
-private fun updatePrepareLocationStatus(locationAvailability: LocationAvailability): String {
-    val gpsText = when (locationAvailability) {
-        LocationAvailability.ACQUIRED_TETHERED, LocationAvailability.ACQUIRED_UNTETHERED
-        -> R.string.GPS_acquired
-        LocationAvailability.NO_GNSS -> R.string.GPS_disabled
-        // TODO Consider redirecting user to change device settings in this case
-        LocationAvailability.ACQUIRING -> R.string.GPS_acquiring
-        LocationAvailability.UNKNOWN -> R.string.GPS_initializing
-        else -> R.string.GPS_unavailable
-    }
-
-    return stringResource(id = gpsText)
-}
-
-@Composable
-private fun LocationStatusText(status: String) {
-    CurvedLayout {
-        curvedText(text = status, fontSize = 12.sp)
     }
 }
 

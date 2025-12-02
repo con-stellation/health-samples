@@ -66,36 +66,11 @@ fun SummaryScreen(
             state = columnState,
             contentPadding = contentPadding
         ) {
-            item {
-                ListHeader(modifier = Modifier.fillMaxWidth()) {
-                    Text(text = stringResource(id = R.string.workout_complete))
-                }
-            }
-            item {
-                SummaryFormat(
-                    value = formatElapsedTime(uiState.elapsedTime, includeSeconds = true),
-                    metric = stringResource(id = R.string.duration),
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
+
             item {
                 SummaryFormat(
                     value = formatHeartRate(uiState.averageHeartRate),
                     metric = stringResource(id = R.string.avgHR),
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-            item {
-                SummaryFormat(
-                    value = formatDistanceKm(uiState.totalDistance),
-                    metric = stringResource(id = R.string.distance),
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-            item {
-                SummaryFormat(
-                    value = formatCalories(uiState.totalCalories),
-                    metric = stringResource(id = R.string.calories),
                     modifier = Modifier.fillMaxWidth()
                 )
             }
