@@ -18,10 +18,6 @@ package com.example.healthapp.data
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
-import android.hardware.Sensor
-import android.hardware.SensorEvent
-import android.hardware.SensorEventListener
-import android.hardware.SensorManager
 import androidx.concurrent.futures.await
 import android.os.Vibrator
 import android.util.Log
