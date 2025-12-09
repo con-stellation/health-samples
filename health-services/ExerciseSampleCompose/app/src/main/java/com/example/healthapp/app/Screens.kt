@@ -27,8 +27,6 @@ sealed class Screen(
 
     object PreparingExercise : Screen("preparingExercise")
 
-    object Goals : Screen(route = "goals")
-
     object Panic : Screen(route = "panic")
 
     object Summary : Screen("summaryScreen") {

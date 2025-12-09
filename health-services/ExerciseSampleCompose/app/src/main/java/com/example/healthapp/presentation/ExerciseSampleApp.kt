@@ -15,10 +15,7 @@
  */
 package com.example.healthapp.presentation
 
-import ExerciseGoalsRoute
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
@@ -66,7 +63,6 @@ fun ExerciseSampleApp(
                         }
                     },
                     onFinishActivity = onFinishActivity,
-                    onGoals = { navController.navigate(Screen.Goals.route) }
                 )
             }
 
@@ -100,9 +96,6 @@ fun ExerciseSampleApp(
                         navController.navigateToTopLevel(PreparingExercise)
                     }
                 )
-            }
-            composable(Screen.Goals.route) {
-                ExerciseGoalsRoute(onSet = { navController.popBackStack() })
             }
         }
     }

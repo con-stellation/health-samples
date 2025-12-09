@@ -41,28 +41,6 @@ constructor(
             )
         )
 
-    suspend fun monitor() {
-        exerciseClientManager.exerciseUpdateFlow.collect {
-            when (it) {
-                is ExerciseMessage.ExerciseUpdateMessage ->
-                    processExerciseUpdate(it.exerciseUpdate)
-
-                is ExerciseMessage.LapSummaryMessage ->
-                    exerciseServiceState.update { oldState ->
-                        oldState.copy(
-                            exerciseLaps = it.lapSummary.lapCount
-                        )
-                    }
-
-                is ExerciseMessage.LocationAvailabilityMessage ->
-                    exerciseServiceState.update { oldState ->
-                        oldState.copy(
-                            locationAvailability = it.locationAvailability
-                        )
-                    }
-            }
-        }
-    }
 
     @SuppressLint("RestrictedApi")
     private fun processExerciseUpdate(exerciseUpdate: ExerciseUpdate) {

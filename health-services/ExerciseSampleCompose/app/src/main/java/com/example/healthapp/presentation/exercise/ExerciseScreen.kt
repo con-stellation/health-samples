@@ -197,7 +197,7 @@ fun ExerciseScreen(
                             }
                         )
                     } else {
-                        ExerciseMetrics(uiState = uiState, onEndClick = onEndClick)
+                        ExerciseMetrics(onEndClick = onEndClick)
                     }
                 }
             }
@@ -207,7 +207,6 @@ fun ExerciseScreen(
 
 @Composable
 private fun ExerciseMetrics(
-    uiState: ExerciseScreenState,
     modifier: Modifier = Modifier,
     onEndClick: () -> Unit
 ) {
@@ -218,10 +217,6 @@ private fun ExerciseMetrics(
         verticalArrangement = Arrangement.spacedBy(10.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        HeartRateRow(uiState)
-
-        DurationRow(uiState)
-
         StopButton(onEndClick = onEndClick)
     }
 }
@@ -255,49 +250,6 @@ private fun ExerciseControlButtons(
         }
     }
 }
-
-@Composable
-private fun HeartRateRow(uiState: ExerciseScreenState) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceAround
-    ) {
-        Row {
-            HRText(
-                hr = uiState.exerciseState?.exerciseMetrics?.heartRate
-            )
-        }
-    }
-}
-
-@Composable
-private fun DurationRow(uiState: ExerciseScreenState) {
-    val lastActiveDurationCheckpoint = uiState.exerciseState?.activeDurationCheckpoint
-    val exerciseState = uiState.exerciseState?.exerciseState
-    Row(
-        horizontalArrangement = Arrangement.SpaceAround,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row {
-            if (exerciseState != null && lastActiveDurationCheckpoint != null) {
-                ActiveDurationText(
-                    checkpoint = lastActiveDurationCheckpoint,
-                    state = uiState.exerciseState.exerciseState
-                ) {
-                    Text(
-                        text = formatElapsedTime(it, includeSeconds = true),
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.secondary,
-                        fontSize = 25.sp
-                    )
-                }
-            } else {
-                Text(text = "--")
-            }
-        }
-    }
-}
-
 
 @WearPreviewDevices
 @Composable

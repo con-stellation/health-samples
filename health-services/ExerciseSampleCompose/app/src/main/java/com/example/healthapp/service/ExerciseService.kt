@@ -117,13 +117,6 @@ class ExerciseService : LifecycleService() {
                 // We may have been restarted by the system. Manage our lifetime accordingly.
                 stopSelfIfNotRunning()
             }
-            // Start collecting exercise information. We might stop shortly (see above), in which
-            // case launchWhenStarted takes care of canceling this coroutine.
-            lifecycleScope.launch(Dispatchers.Default) {
-                repeatOnLifecycle(Lifecycle.State.STARTED) {
-                    exerciseServiceMonitor.monitor()
-                }
-            }
         }
         // If our process is stopped, we might have an active exercise. We want the system to
         // recreate our service so that we can present the ongoing notification in that case.

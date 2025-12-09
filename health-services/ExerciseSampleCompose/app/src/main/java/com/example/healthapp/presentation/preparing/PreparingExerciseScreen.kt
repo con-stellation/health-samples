@@ -70,7 +70,6 @@ fun PreparingExerciseRoute(
     onStart: () -> Unit,
     onFinishActivity: () -> Unit,
     onNoExerciseCapabilities: () -> Unit,
-    onGoals: () -> Unit
 ) {
     val viewModel = hiltViewModel<PreparingViewModel>()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -107,7 +106,6 @@ fun PreparingExerciseRoute(
                 onStart()
             },
             uiState = uiState,
-            onGoals = { onGoals() },
             ambientState = ambientState
         )
     }
@@ -130,7 +128,6 @@ fun PreparingExerciseScreen(
     uiState: PreparingScreenState,
     ambientState: AmbientState,
     onStart: () -> Unit = {},
-    onGoals: () -> Unit = {}
 ) {
     val location = (uiState as? PreparingScreenState.Preparing)?.locationAvailability
 

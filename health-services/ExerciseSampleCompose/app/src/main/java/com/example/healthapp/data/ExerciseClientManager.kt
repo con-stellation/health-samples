@@ -26,15 +26,9 @@ import androidx.concurrent.futures.await
 import android.os.Vibrator
 import android.util.Log
 import androidx.health.services.client.ExerciseClient
-import androidx.health.services.client.ExerciseUpdateCallback
 import androidx.health.services.client.HealthServicesClient
-import androidx.health.services.client.data.Availability
-import androidx.health.services.client.data.ComparisonType
 import androidx.health.services.client.data.DataPointContainer
 import androidx.health.services.client.data.DataType
-import androidx.health.services.client.data.DataTypeCondition
-import androidx.health.services.client.data.ExerciseConfig
-import androidx.health.services.client.data.ExerciseGoal
 import androidx.health.services.client.data.ExerciseLapSummary
 import androidx.health.services.client.data.ExerciseType
 import androidx.health.services.client.data.ExerciseTypeCapabilities
@@ -43,11 +37,9 @@ import androidx.health.services.client.data.LocationAvailability
 import androidx.health.services.client.data.WarmUpConfig
 import androidx.health.services.client.endExercise
 import androidx.health.services.client.getCapabilities
-import androidx.health.services.client.markLap
 import androidx.health.services.client.pauseExercise
 import androidx.health.services.client.prepareExercise
 import androidx.health.services.client.resumeExercise
-import androidx.health.services.client.startExercise
 import androidx.wear.remote.interactions.RemoteActivityHelper
 import com.example.healthapp.service.ExerciseLogger
 import com.google.android.gms.wearable.Wearable
@@ -56,21 +48,17 @@ import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.time.Duration
-import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.channels.trySendBlocking
-import kotlinx.coroutines.flow.callbackFlow
 import androidx.core.net.toUri
+import com.example.healthapp.presentation.exercise.DynamicTimeWarping
 import com.example.healthapp.service.RealityCheck
 import com.google.android.gms.tasks.Tasks
-import kotlin.math.roundToInt
+import kotlin.math.min
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 /**
@@ -102,10 +90,8 @@ constructor(
     private val heartRateCriticalMutableFlow = MutableStateFlow(false)
     val heartRateCritical = heartRateCriticalMutableFlow.asStateFlow()
     var tenMinutesPassed = false
-    private var windowStartTime: Long = 0L
-    private var collectedHrDatapoints = mutableListOf<Pair<Double, Long>>()
-    private var thresholds = Thresholds(0.0, Duration.ZERO)
-
+    private val hrDtwWindow = mutableListOf<Pair<Double, Long>>()
+    private val dtwWindowMs = 10 * 60 * 1000L // uns interessiert wie die HR in einer Zeitspanne vor der Panikattacke aussah
     private var heartRateSensor: Sensor?=null
     init {
         managerScope.launch {
@@ -124,105 +110,6 @@ constructor(
         } else {
             null
         }
-    }
-
-    fun updateGoals(newThresholds: Thresholds) {
-        thresholds = newThresholds.copy()
-    }
-
-    suspend fun startExercise() {
-        Log.i("ExerciseClientManager", "Starting exercise")
-        collectedHrDatapoints.clear()
-        windowStartTime = 0L
-
-        val exec : Executor = Executors.newSingleThreadExecutor()
-        val connectedNodes = Tasks.await(Wearable.getNodeClient(applicationContext).connectedNodes)
-        Log.i("ExerciseClientManager", "Connected nodes: $connectedNodes. Trying to start remote companion.")
-        if(!connectedNodes.isEmpty()){
-            val remoteActivityHelper = RemoteActivityHelper(applicationContext, exec)
-            val remoteResult = remoteActivityHelper.startRemoteActivity(
-                Intent(Intent.ACTION_VIEW).addCategory(Intent.CATEGORY_BROWSABLE).setData("companionapp://sms92".toUri()),
-                connectedNodes[0].id
-            ).await()
-
-            try {
-                Log.i("WearOSRemote", "Remote Activity Started?")
-            } catch (e: Exception) {
-                Log.e("WearOSRemote", "Fehler beim Starten der Remote Activity", e)
-            }
-        } else {
-            Log.i("ExerciseClientService", "No connected devices detected. Cannot launch remote Companion.")
-        }
-
-        // Types for which we want to receive metrics. Only ask for ones that are supported.
-        val capabilities = getExerciseCapabilities()
-
-        if (capabilities == null) {
-            logger.log("No capabilities")
-            return
-        }
-
-        val dataTypes =
-            setOf(
-                DataType.HEART_RATE_BPM,
-                DataType.HEART_RATE_BPM_STATS,
-                DataType.CALORIES_TOTAL,
-                DataType.DISTANCE_TOTAL
-            ).intersect(capabilities.supportedDataTypes)
-        val exerciseGoals = mutableListOf<ExerciseGoal<*>>()
-        if (supportsCalorieGoal(capabilities)) {
-            // Create a one-time goal.
-            exerciseGoals.add(
-                ExerciseGoal.createOneTimeGoal(
-                    DataTypeCondition(
-                        dataType = DataType.CALORIES_TOTAL,
-                        threshold = CALORIES_THRESHOLD,
-                        comparisonType = ComparisonType.GREATER_THAN_OR_EQUAL
-                    )
-                )
-            )
-        }
-
-        // Set a distance goal if it's supported by the exercise and the user has entered one
-        if (supportsDistanceMilestone(capabilities) && thresholds.distanceIsSet) {
-            exerciseGoals.add(
-                ExerciseGoal.createOneTimeGoal(
-                    condition =
-                    DataTypeCondition(
-                        dataType = DataType.DISTANCE_TOTAL,
-                        threshold = thresholds.distance * 1000, // our app uses kilometers
-                        comparisonType = ComparisonType.GREATER_THAN_OR_EQUAL
-                    )
-                )
-            )
-        }
-
-        // Set a duration goal if it's supported by the exercise and the user has entered one
-        if (supportsDurationMilestone(capabilities) && thresholds.durationIsSet) {
-            exerciseGoals.add(
-                ExerciseGoal.createOneTimeGoal(
-                    DataTypeCondition(
-                        dataType = DataType.ACTIVE_EXERCISE_DURATION_TOTAL,
-                        threshold = thresholds.duration.inWholeSeconds,
-                        comparisonType = ComparisonType.GREATER_THAN_OR_EQUAL
-                    )
-                )
-            )
-        }
-
-        val supportsAutoPauseAndResume = capabilities.supportsAutoPauseAndResume
-
-        val config =
-            ExerciseConfig(
-                exerciseType = ExerciseType.RUNNING,
-                dataTypes = dataTypes,
-                isAutoPauseAndResumeEnabled = supportsAutoPauseAndResume,
-                isGpsEnabled = true,
-                exerciseGoals = exerciseGoals
-            )
-
-        exerciseClient.startExercise(config)
-        logger.log("Started exercise")
     }
 
     /***
@@ -245,8 +132,6 @@ constructor(
 
     suspend fun endExercise() {
         logger.log("Ending exercise")
-        collectedHrDatapoints.clear()
-        windowStartTime = 0L
         stopHrMonitoring()
         exerciseClient.endExercise()
     }
@@ -261,98 +146,13 @@ constructor(
         exerciseClient.resumeExercise()
     }
 
-    /**
-     * When the flow starts, it will register an [ExerciseUpdateCallback] and start to emit
-     * messages. When there are no more subscribers, or when the coroutine scope is
-     * cancelled, this flow will unregister the listener.
-     * [callbackFlow] is used to bridge between a callback-based API and Kotlin flows.
-     */
-    val exerciseUpdateFlow =
-        callbackFlow {
-            val callback =
-                object : ExerciseUpdateCallback {
-                    override fun onExerciseUpdateReceived(update: ExerciseUpdate) {
-                        logMetrics(update.latestMetrics)
-                        evaluateData(update.latestMetrics)
-                        trySendBlocking(ExerciseMessage.ExerciseUpdateMessage(update))
-                    }
-
-                    override fun onLapSummaryReceived(lapSummary: ExerciseLapSummary) {
-                        trySendBlocking(ExerciseMessage.LapSummaryMessage(lapSummary))
-                    }
-
-                    override fun onRegistered() {
-                    }
-
-                    override fun onRegistrationFailed(throwable: Throwable) {
-                        TODO("Not yet implemented")
-                    }
-
-                    override fun onAvailabilityChanged(
-                        dataType: DataType<*, *>,
-                        availability: Availability
-                    ) {
-                        if (availability is LocationAvailability) {
-                            trySendBlocking(
-                                ExerciseMessage.LocationAvailabilityMessage(availability)
-                            )
-                        }
-                    }
-                }
-
-            exerciseClient.setUpdateCallback(callback)
-            awaitClose {
-                // Ignore async result
-                exerciseClient.clearUpdateCallbackAsync(callback)
-            }
-        }
-
-    private companion object {
-        const val CALORIES_THRESHOLD = 250.0
-    }
-
-    private fun evaluateData(metrics: DataPointContainer) {
-        val hrData = metrics.getData(DataType.HEART_RATE_BPM)
-
-        if(hrData.isEmpty()) {
-            Log.i("ExerciseClientManager", "No heart rate data available")
-            return
-        }
-
-        if (windowStartTime == 0L){
-            windowStartTime = hrData.first().timeDurationFromBoot.toMillis()
-        }
-
-        hrData.forEach { dataPoint ->
-            collectedHrDatapoints.add(Pair(dataPoint.value, dataPoint.timeDurationFromBoot.toMillis()))
-        }
-        Log.i("ExerciseClientManager", "Collected HR datapoints: ${collectedHrDatapoints.size}. Time? Windowstarttime ${windowStartTime} vs latest datapoint ${hrData.last().timeDurationFromBoot.toMillis()}")
-        if(windowStartTime + 120000 <= hrData.last().timeDurationFromBoot.toMillis()) {
-            hrAverage = collectedHrDatapoints.map { it.first }.average().roundToInt()
-            // TODO entfernen. Temporäre hrMinThresh für Testing Zwecke...
-            hrMinThresh = 110
-            Log.i("ExerciseClientManager", "Average HR: $hrAverage. hrMaxThresh: $hrMaxThresh, hrMinThresh: $hrMinThresh")
-            if(hrAverage >= hrMaxThresh) {
-                Log.i("ExerciseClientManager", "Heart rate exceeded threshold")
-                heartRateCriticalMutableFlow.value = true
-            } else if (hrAverage <= hrMinThresh){
-                Log.i("ExerciseClientManager", "Heart rate below threshold")
-                heartRateCriticalMutableFlow.value = false
-            }
-
-            collectedHrDatapoints.clear()
-            windowStartTime = 0L
-
-        }
-    }
-
     fun startBreathingExercise() {
         if (breathingExerciseJob?.isActive != true) {
             Log.i("ExerciseClientManager", "Starting breathing exercise")
             //val startTime = System.currentTimeMillis()
             managerScope.launch {
                 delay(60000 * 10) // wait 10 min and ask again
-                // TODO how to signal panicViewModel that we need to show dialog...
+                // TODO how to signal panicViewModel that we need to show dialog... via tenMinutesPassed variable?
                 Log.i("ExerciseClientManager", "10 minutes have passed...")
                 tenMinutesPassed = true
             }
@@ -386,6 +186,7 @@ constructor(
         override fun onSensorChanged(event: SensorEvent?) {
             if (event?.sensor?.type == Sensor.TYPE_HEART_RATE) {
                 val heartRate = event.values[0]
+
                 if (heartRate > 0) { // Ignoriere ungültige Werte
                     val currentTime = System.currentTimeMillis()
                     Log.i(
@@ -393,23 +194,71 @@ constructor(
                         "Heart rate via Sensor: $heartRate, Time: $currentTime"
                     )
 
-                    collectedHrDatapoints.clear()
-                    windowStartTime = 0L
-
-
                     // 1. Neuen Punkt zum DTW-Fenster hinzufügen
-//                    hrDtwWindow.add(heartRate.toDouble() to currentTime)
-//
-//                    // 2. Alte Punkte entfernen
-//                    hrDtwWindow.removeAll { it.second < currentTime - dtwWindowMs }
-//
-//                    // 3. DTW-Analyse starten
+                    hrDtwWindow.add(heartRate.toDouble() to currentTime)
+
+                    // 2. Alte Punkte entfernen
+                    hrDtwWindow.removeAll { it.second < currentTime - dtwWindowMs }
+
+                    // 3. DTW-Analyse starten
 //                    if (hrDtwWindow.size > 20) {
 //                        runDtwAnalysis()
 //                    }
                 }
             }
         }
+
+        // In ExerciseClientManager.kt
+
+        // Definiere dein Template (z.B. oben in der Klasse)
+        private val panicAttackTemplate: DoubleArray = doubleArrayOf() // Siehe Schritt 1
+
+        private fun runDtwAnalysis() {
+            managerScope.launch {
+                // Extrahiere nur die HR-Werte aus deinem Fenster
+                val liveHrValues = hrDtwWindow.map { it.first }.toDoubleArray()
+
+                // WICHTIG: Interpoliere die Live-Daten, damit sie die gleiche Länge wie das Template haben!
+                // DTW kann mit unterschiedlich langen Reihen umgehen, aber für den Vergleich ist gleiche Länge besser.
+                val interpolatedLiveValues = interpolate(liveHrValues, panicAttackTemplate.size)
+
+                // DTW-Distanz berechnen
+                val dtwDistance = DynamicTimeWarping.calculateDistance(panicAttackTemplate, interpolatedLiveValues)
+
+                Log.d("DTW_Analysis", "DTW Distance: $dtwDistance")
+
+                // Definiere einen Schwellenwert für die Distanz.
+                // Wenn die Distanz UNTER diesem Wert liegt, sind die Kurven sehr ähnlich.
+                // Dieser Wert muss durch Experimentieren gefunden werden!
+                val dtwThreshold = 500.0 // Fiktiver Startwert!
+
+                if (dtwDistance < dtwThreshold) {
+                    Log.w("DTW_Analysis", "PANIC ATTACK PATTERN DETECTED! Distance: $dtwDistance")
+                    heartRateCriticalMutableFlow.value = true
+                }
+            }
+        }
+
+        // Eine einfache Interpolations-Hilfsfunktion
+        private fun interpolate(source: DoubleArray, newSize: Int): DoubleArray {
+            if (source.size == newSize) return source
+            val result = DoubleArray(newSize)
+            val factor = (source.size - 1).toDouble() / (newSize - 1)
+            for (i in 0 until newSize) {
+                val srcIndex = i * factor
+                val i0 = srcIndex.toInt()
+                val i1 = min(i0 + 1, source.size - 1)
+                if (i0 == i1) {
+                    result[i] = source[i0]
+                } else {
+                    val w1 = srcIndex - i0
+                    val w0 = 1.0 - w1
+                    result[i] = w0 * source[i0] + w1 * source[i1]
+                }
+            }
+            return result
+        }
+
     }
 
     suspend fun startHrMonitoring() {
@@ -460,13 +309,6 @@ private fun logMetrics(metrics: DataPointContainer) {
     }
 }
 
-
-data class Thresholds(
-    var distance: Double,
-    var duration: Duration,
-    var durationIsSet: Boolean = duration != Duration.ZERO,
-    var distanceIsSet: Boolean = distance != 0.0
-)
 
 sealed class ExerciseMessage {
     class ExerciseUpdateMessage(
