@@ -80,27 +80,16 @@ constructor(
     val exerciseClient: ExerciseClient = healthServicesClient.exerciseClient
     var breathingExerciseJob: Job? = null
     private val managerScope = CoroutineScope(Dispatchers.Default)
-    var hrMaxThresh = 0
-    private set
-    var hrMinThresh = 0
-    private set
 
+    val prePanicTemplate = DtwTemplates.Companion.prePanicRawTemplate()
     var hrAverage = 0
 
     private val heartRateCriticalMutableFlow = MutableStateFlow(false)
     val heartRateCritical = heartRateCriticalMutableFlow.asStateFlow()
     var tenMinutesPassed = false
     private val hrDtwWindow = mutableListOf<Pair<Double, Long>>()
-    private val dtwWindowMs = 10 * 60 * 1000L // uns interessiert wie die HR in einer Zeitspanne vor der Panikattacke aussah
+    private val dtwWindowSek = 15 * 60 // uns interessiert wie die HR in einer Zeitspanne vor der Panikattacke aussah
     private var heartRateSensor: Sensor?=null
-    init {
-        managerScope.launch {
-            dataStoreManager.readThresholds().collect { thresholds ->
-                hrMaxThresh = thresholds[1] ?: 75 // TODO defaultwerte überall angleichen
-                hrMinThresh = thresholds[0] ?: 60
-            }
-        }
-    }
 
     suspend fun getExerciseCapabilities(): ExerciseTypeCapabilities? {
         val capabilities = exerciseClient.getCapabilities()
@@ -174,10 +163,6 @@ constructor(
         heartRateCriticalMutableFlow.value = false
     }
 
-    fun updateHeartRateThreshold() {
-        hrMaxThresh = hrAverage
-    }
-
     private val sensorListener = object : SensorEventListener {
         override fun onAccuracyChanged(p0: Sensor?, p1: Int) {
             Log.i("ExerciseClientManager", "Sensor accuracy changed: $p1")
@@ -198,20 +183,15 @@ constructor(
                     hrDtwWindow.add(heartRate.toDouble() to currentTime)
 
                     // 2. Alte Punkte entfernen
-                    hrDtwWindow.removeAll { it.second < currentTime - dtwWindowMs }
+                    hrDtwWindow.removeAll { it.second < currentTime - dtwWindowSek }
 
                     // 3. DTW-Analyse starten
-//                    if (hrDtwWindow.size > 20) {
-//                        runDtwAnalysis()
-//                    }
+                    if (hrDtwWindow.size > 20) {
+                        runDtwAnalysis()
+                    }
                 }
             }
         }
-
-        // In ExerciseClientManager.kt
-
-        // Definiere dein Template (z.B. oben in der Klasse)
-        private val panicAttackTemplate: DoubleArray = doubleArrayOf() // Siehe Schritt 1
 
         private fun runDtwAnalysis() {
             managerScope.launch {
@@ -220,10 +200,10 @@ constructor(
 
                 // WICHTIG: Interpoliere die Live-Daten, damit sie die gleiche Länge wie das Template haben!
                 // DTW kann mit unterschiedlich langen Reihen umgehen, aber für den Vergleich ist gleiche Länge besser.
-                val interpolatedLiveValues = interpolate(liveHrValues, panicAttackTemplate.size)
+                val interpolatedLiveValues = interpolate(liveHrValues, prePanicTemplate.size)
 
                 // DTW-Distanz berechnen
-                val dtwDistance = DynamicTimeWarping.calculateDistance(panicAttackTemplate, interpolatedLiveValues)
+                val dtwDistance = DynamicTimeWarping.calculateDistance(prePanicTemplate, interpolatedLiveValues)
 
                 Log.d("DTW_Analysis", "DTW Distance: $dtwDistance")
 

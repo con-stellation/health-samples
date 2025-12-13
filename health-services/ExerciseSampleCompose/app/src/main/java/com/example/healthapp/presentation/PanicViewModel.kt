@@ -50,7 +50,6 @@ constructor(
         showInterventionDialog = false
         exerciseClientManager.tenMinutesPassed = false
         exerciseClientManager.stopBreathingExercise()
-        exerciseClientManager.updateHeartRateThreshold()
         resetDialog()
     }
 
