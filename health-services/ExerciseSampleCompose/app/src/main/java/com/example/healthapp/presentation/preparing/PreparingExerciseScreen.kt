@@ -102,7 +102,7 @@ fun PreparingExerciseRoute(
     AmbientAware { ambientState ->
         PreparingExerciseScreen(
             onStart = {
-                viewModel.startExercise()
+                viewModel.startMonitoring()
                 onStart()
             },
             uiState = uiState,

@@ -16,6 +16,8 @@
 package com.example.healthapp.presentation.component
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Monitor
+import androidx.compose.material.icons.filled.MonitorHeart
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
@@ -30,8 +32,8 @@ fun StartButton(onStartClick: () -> Unit) {
         onClick = onStartClick
     ) {
         Icon(
-            imageVector = Icons.Default.PlayArrow,
-            contentDescription = stringResource(id = R.string.start_button_cd)
+            imageVector = Icons.Default.MonitorHeart,
+            contentDescription = stringResource(id = R.string.monitor_button_cd)
         )
     }
 }

@@ -59,7 +59,7 @@ class ExerciseScreenTest(
                     onPauseClick = {},
                     onEndClick = {},
                     onResumeClick = {},
-                    onStartClick = {},
+                    onStartMonitoringClick = {},
                     uiState =
                     ExerciseScreenState(
                         hasExerciseCapabilities = true,
@@ -68,8 +68,8 @@ class ExerciseScreenTest(
                         ServiceState.Connected(
                             ExerciseServiceState()
                         ),
-                        exerciseState = ExerciseServiceState()
-                    ),
+                        exerciseState = ExerciseServiceState(),
+                    )
                 )
             }
         }
@@ -88,7 +88,7 @@ class ExerciseScreenTest(
                         onPauseClick = {},
                         onEndClick = {},
                         onResumeClick = {},
-                        onStartClick = {},
+                        onStartMonitoringClick = {},
                         uiState =
                         ExerciseScreenState(
                             hasExerciseCapabilities = true,

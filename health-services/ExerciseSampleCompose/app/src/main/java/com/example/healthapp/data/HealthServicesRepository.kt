@@ -87,16 +87,18 @@ constructor(
             }
         }
 
-    fun startExercise() =
+    fun startMonitoring() =
         serviceCall {
             try {
                 errorState.value = null
-                startExercise()
+                startMonitoring()
             } catch (e: Exception) {
                 errorState.value = e.message
                 logger.error("Error starting exercise", e.fillInStackTrace())
             }
         }
+
+    fun startExercise() = serviceCall { startExercise() }
 
     fun pauseExercise() = serviceCall { pauseExercise() }
 

@@ -14,7 +14,8 @@
   ~ limitations under the License.
   -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.healthapp">
+    package="com.example.healthapp"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- For receiving exercise metrics. -->
     <uses-permission android:name="android.permission.BODY_SENSORS" android:maxSdkVersion="35" />
@@ -36,6 +37,12 @@
     <queries>
         <package android:name="com.google.android.wearable.healthservices" />
     </queries>
+
+    <attribution android:tag="monitor_button_cd"
+        android:label="@string/monitor_button_cd"
+        tools:targetApi="s"
+        tools:node="merge"/>
+
     <application
         android:name="com.example.healthapp.app.ExerciseSampleApplication"
         android:allowBackup="true"

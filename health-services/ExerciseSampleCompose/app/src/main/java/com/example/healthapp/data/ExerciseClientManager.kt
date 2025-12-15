@@ -139,7 +139,6 @@ constructor(
                 tenMinutesPassed = true
             }
             breathingExerciseJob = realityCheck.executeVibration(managerScope, vibrator)
-
         }
     }
 

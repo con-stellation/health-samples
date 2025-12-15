@@ -30,7 +30,7 @@
     <string name="restart">Restart</string>
 
     <!-- Descriptions -->
-    <string name="start_button_cd">Start</string>
+    <string name="monitor_button_cd">Monitor</string>
     <string name="stop_button_cd">End</string>
     <string name="pause_button_cd">Pause</string>
     <string name="resume_button_cd">Resume</string>

@@ -26,7 +26,7 @@ android {
   compileSdk 36
 
   defaultConfig {
-    applicationId "com.example.healthconnectsample"
+    applicationId "com.example.healthapp"
     minSdk 30
     targetSdk 36
     versionCode 1
@@ -135,7 +135,6 @@ dependencies {
   testImplementation libs.roborazzi.compose
   testImplementation libs.roborazzi.rule
   testImplementation(libs.horologist.roboscreenshots)
-
   androidTestImplementation libs.test.ext.junit
   androidTestImplementation libs.test.espresso.core
   androidTestImplementation libs.compose.ui.test.junit4

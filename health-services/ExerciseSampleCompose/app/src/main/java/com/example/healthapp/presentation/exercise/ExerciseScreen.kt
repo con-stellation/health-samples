@@ -21,9 +21,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
@@ -32,9 +34,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.foundation.pager.HorizontalPager
@@ -43,19 +43,17 @@ import androidx.wear.compose.material3.AlertDialog
 import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.FilledTonalButton
 import androidx.wear.compose.material3.HorizontalPagerScaffold
-import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.ui.tooling.preview.WearPreviewDevices
 import com.example.healthapp.R
 import com.example.healthapp.data.ServiceState
 import com.example.healthapp.presentation.PanicViewModel
-import com.example.healthapp.presentation.component.HRText
+import com.example.healthapp.presentation.component.ManualExerciseButton
 import com.example.healthapp.presentation.component.PauseButton
 import com.example.healthapp.presentation.component.ResumeButton
 import com.example.healthapp.presentation.component.StartButton
 import com.example.healthapp.presentation.component.StopButton
-import com.example.healthapp.presentation.component.formatElapsedTime
 import com.example.healthapp.presentation.dialogs.PanicDetectedAlert
 import com.example.healthapp.presentation.summary.SummaryScreenState
 import com.example.healthapp.presentation.theme.ThemePreview
@@ -63,7 +61,6 @@ import com.example.healthapp.service.ExerciseServiceState
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.compose.ambient.AmbientAware
 import com.google.android.horologist.compose.ambient.AmbientState
-import com.google.android.horologist.health.composables.ActiveDurationText
 import kotlinx.coroutines.launch
 
 @Composable
@@ -103,13 +100,14 @@ fun ExerciseRoute(
             uiState = uiState
         )
     } else {
-        AmbientAware { ambientState ->
+        com.google.android.horologist.compose.ambient.AmbientAware { ambientState ->
             ExerciseScreen(
                 ambientState = ambientState,
                 onPauseClick = { viewModel.pauseExercise() },
                 onEndClick = { viewModel.endExercise() },
                 onResumeClick = { viewModel.resumeExercise() },
-                onStartClick = { viewModel.startExercise() },
+                onStartMonitoringClick = { viewModel.startMonitoring() },
+                onStartExerciseClick = { viewModel.startExercise() },
                 uiState = uiState,
                 modifier = modifier
             )
@@ -165,7 +163,8 @@ fun ExerciseScreen(
     onPauseClick: () -> Unit,
     onEndClick: () -> Unit,
     onResumeClick: () -> Unit,
-    onStartClick: () -> Unit,
+    onStartMonitoringClick: () -> Unit,
+    onStartExerciseClick: () -> Unit,
     uiState: ExerciseScreenState,
     modifier: Modifier = Modifier
 ) {
@@ -181,7 +180,7 @@ fun ExerciseScreen(
                     if (page == 0) {
                         ExerciseControlButtons(
                             uiState = uiState,
-                            onStartClick = onStartClick,
+                            onStartMonitoringClick = onStartMonitoringClick,
                             onEndClick = onEndClick,
                             onResumeClick = {
                                 onResumeClick()
@@ -194,7 +193,8 @@ fun ExerciseScreen(
                                 coroutineScope.launch {
                                     pagerState.animateScrollToPage(1)
                                 }
-                            }
+                            },
+                            onStartExerciseClick = onStartExerciseClick
                         )
                     } else {
                         ExerciseMetrics(onEndClick = onEndClick)
@@ -224,7 +224,8 @@ private fun ExerciseMetrics(
 @Composable
 private fun ExerciseControlButtons(
     uiState: ExerciseScreenState,
-    onStartClick: () -> Unit,
+    onStartMonitoringClick: () -> Unit,
+    onStartExerciseClick: () -> Unit,
     onEndClick: () -> Unit,
     onResumeClick: () -> Unit,
     onPauseClick: () -> Unit,
@@ -236,8 +237,13 @@ private fun ExerciseControlButtons(
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
+
             if (uiState.isEnding) {
-                StartButton(onStartClick)
+                Row (horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically){
+                    StartButton(onStartMonitoringClick)
+                    Spacer(modifier = Modifier.width(5.dp))
+                    //ManualExerciseButton(onStartExerciseClick) // geht irgendwie nicht. Warum wird der Button nicht neben dem anderen angezeigt?
+                }
             } else {
                 StopButton(onEndClick)
             }
@@ -259,7 +265,8 @@ fun ExerciseScreenPreview() {
             onPauseClick = {},
             onEndClick = {},
             onResumeClick = {},
-            onStartClick = {},
+            onStartMonitoringClick = {},
+            onStartExerciseClick = {},
             uiState = ExerciseScreenState(
                 hasExerciseCapabilities = true,
                 isTrackingAnotherExercise = false,
@@ -305,10 +312,11 @@ fun ExerciseControlButtonsPreview() {
                 ),
                 exerciseState = ExerciseServiceState()
             ),
-            onStartClick = {},
+            onStartMonitoringClick = {},
             onEndClick = {},
             onResumeClick = {},
-            onPauseClick = {}
+            onPauseClick = {},
+            onStartExerciseClick = {}
         )
     }
 }

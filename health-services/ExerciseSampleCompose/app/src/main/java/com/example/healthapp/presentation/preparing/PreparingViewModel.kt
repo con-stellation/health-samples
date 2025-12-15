@@ -44,8 +44,8 @@ constructor(
         }
     }
 
-    fun startExercise() {
-        healthServicesRepository.startExercise()
+    fun startMonitoring() {
+        healthServicesRepository.startMonitoring()
     }
 
     val uiState: StateFlow<PreparingScreenState> =

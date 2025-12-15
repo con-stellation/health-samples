@@ -73,9 +73,14 @@ class ExerciseService : LifecycleService() {
     /**
      * Start exercise in this service's coroutine context.
      */
-    suspend fun startExercise() {
+    suspend fun startMonitoring() {
         postOngoingActivityNotification()
         exerciseClientManager.startHrMonitoring()
+    }
+
+    suspend fun startExercise() {
+        postOngoingActivityNotification()
+        exerciseClientManager.startBreathingExercise()
     }
 
     /**

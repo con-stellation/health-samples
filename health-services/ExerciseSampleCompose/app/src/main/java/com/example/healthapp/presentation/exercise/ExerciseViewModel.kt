@@ -59,10 +59,13 @@ constructor(
     suspend fun isExerciseInProgress(): Boolean =
         healthServicesRepository.isExerciseInProgress()
 
+    fun startMonitoring() {
+        healthServicesRepository.startMonitoring()
+    }
+
     fun startExercise() {
         healthServicesRepository.startExercise()
     }
-
     fun pauseExercise() {
         healthServicesRepository.pauseExercise()
     }
