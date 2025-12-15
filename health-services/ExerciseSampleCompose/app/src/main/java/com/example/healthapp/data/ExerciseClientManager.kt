@@ -27,13 +27,9 @@ import android.os.Vibrator
 import android.util.Log
 import androidx.health.services.client.ExerciseClient
 import androidx.health.services.client.HealthServicesClient
-import androidx.health.services.client.data.DataPointContainer
 import androidx.health.services.client.data.DataType
-import androidx.health.services.client.data.ExerciseLapSummary
 import androidx.health.services.client.data.ExerciseType
 import androidx.health.services.client.data.ExerciseTypeCapabilities
-import androidx.health.services.client.data.ExerciseUpdate
-import androidx.health.services.client.data.LocationAvailability
 import androidx.health.services.client.data.WarmUpConfig
 import androidx.health.services.client.endExercise
 import androidx.health.services.client.getCapabilities
@@ -41,7 +37,6 @@ import androidx.health.services.client.pauseExercise
 import androidx.health.services.client.prepareExercise
 import androidx.health.services.client.resumeExercise
 import androidx.wear.remote.interactions.RemoteActivityHelper
-import android.os.SystemClock
 import com.example.healthapp.service.ExerciseLogger
 import com.google.android.gms.wearable.Wearable
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -206,7 +201,7 @@ constructor(
 
                 // DTW-Distanz berechnen
                 if(breathingExerciseJob?.isActive == true) {
-                    calmDtwDistance = DynamicTimeWarping.calculateDistance(postPanicTemplate, interpolatedLiveValues)
+                    calmDtwDistance = min(DynamicTimeWarping.calculateDistance(postPanicTemplate, interpolatedLiveValues), DynamicTimeWarping.calculateDistance(restingHrTemplate, interpolatedLiveValues))
                 }
                  dtwDistance = DynamicTimeWarping.calculateDistance(prePanicTemplate, interpolatedLiveValues)
 
@@ -220,8 +215,9 @@ constructor(
                 if (dtwDistance < dtwThreshold || calmDtwDistance < dtwThreshold) {
                     Log.w("DTW_Analysis", "PANIC ATTACK PATTERNS panic Distance: $dtwDistance, calm Distance: $calmDtwDistance")
 
-                    if(dtwDistance >= calmDtwDistance) {
+                    if(dtwDistance <= calmDtwDistance) {
                         heartRateCriticalMutableFlow.value = true
+                        calmDtwDistance = Double.MAX_VALUE
                     } else {
                         heartRateCriticalMutableFlow.value = false
                     }
@@ -266,7 +262,7 @@ constructor(
         Log.i("ExerciseClientManager", "Connected nodes: $connectedNodes. Trying to start remote companion.")
         if(!connectedNodes.isEmpty()){
             val remoteActivityHelper = RemoteActivityHelper(applicationContext, exec)
-            val remoteResult = remoteActivityHelper.startRemoteActivity(
+            remoteActivityHelper.startRemoteActivity(
                 Intent(Intent.ACTION_VIEW).addCategory(Intent.CATEGORY_BROWSABLE).setData("companionapp://sms92".toUri()),
                 connectedNodes[0].id
             ).await()
@@ -285,14 +281,5 @@ constructor(
         sensorManager.unregisterListener(sensorListener)
         hrDtwWindow.clear()
         Log.i("DTW_Sensor", "SensorListener deregistriert.")
-    }
-}
-
-private fun logMetrics(metrics: DataPointContainer) {
-    metrics.getData(DataType.HEART_RATE_BPM).forEach { dataPoint ->
-        val bpm = dataPoint.value
-        val timeStamp = dataPoint.timeDurationFromBoot // Oder eine andere Zeitangabe
-        Log.d("ExerciseService_HR_Background", "Measured Heartrate (im Service): $bpm BPM, Zeitstempel: $timeStamp")
-
     }
 }
