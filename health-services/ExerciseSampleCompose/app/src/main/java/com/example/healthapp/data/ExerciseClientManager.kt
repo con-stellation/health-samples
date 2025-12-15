@@ -41,6 +41,7 @@ import androidx.health.services.client.pauseExercise
 import androidx.health.services.client.prepareExercise
 import androidx.health.services.client.resumeExercise
 import androidx.wear.remote.interactions.RemoteActivityHelper
+import android.os.SystemClock
 import com.example.healthapp.service.ExerciseLogger
 import com.google.android.gms.wearable.Wearable
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -73,22 +74,19 @@ constructor(
     healthServicesClient: HealthServicesClient,
     private val logger: ExerciseLogger,
     private val vibrator: Vibrator,
-    private val dataStoreManager: DataStoreManager,
     private val realityCheck: RealityCheck,
     private val sensorManager: SensorManager
 ) {
     val exerciseClient: ExerciseClient = healthServicesClient.exerciseClient
     var breathingExerciseJob: Job? = null
     private val managerScope = CoroutineScope(Dispatchers.Default)
-
-    val prePanicTemplate = DtwTemplates.Companion.prePanicRawTemplate()
-    var hrAverage = 0
-
+    val prePanicTemplate = DtwTemplates.Companion.prePanicSmoothedTemplate()
+    val postPanicTemplate = DtwTemplates.Companion.postPanicSmoothedTemplate()
+    val restingHrTemplate = DtwTemplates.Companion.restingHrTemplateSmoothedS11()
     private val heartRateCriticalMutableFlow = MutableStateFlow(false)
     val heartRateCritical = heartRateCriticalMutableFlow.asStateFlow()
     var tenMinutesPassed = false
-    private val hrDtwWindow = mutableListOf<Pair<Double, Long>>()
-    private val dtwWindowSek = 15 * 60 // uns interessiert wie die HR in einer Zeitspanne vor der Panikattacke aussah
+    private val hrDtwWindow = mutableListOf<Double>()
     private var heartRateSensor: Sensor?=null
 
     suspend fun getExerciseCapabilities(): ExerciseTypeCapabilities? {
@@ -162,7 +160,6 @@ constructor(
     fun resetCriticalHeartRateState() {
         heartRateCriticalMutableFlow.value = false
     }
-
     private val sensorListener = object : SensorEventListener {
         override fun onAccuracyChanged(p0: Sensor?, p1: Int) {
             Log.i("ExerciseClientManager", "Sensor accuracy changed: $p1")
@@ -173,48 +170,61 @@ constructor(
                 val heartRate = event.values[0]
 
                 if (heartRate > 0) { // Ignoriere ungültige Werte
-                    val currentTime = System.currentTimeMillis()
+
                     Log.i(
                         "ExerciseClientManager",
-                        "Heart rate via Sensor: $heartRate, Time: $currentTime"
+                        "Heart rate via Sensor: $heartRate, eventTime: ${event.timestamp}"
                     )
 
                     // 1. Neuen Punkt zum DTW-Fenster hinzufügen
-                    hrDtwWindow.add(heartRate.toDouble() to currentTime)
+                    while(hrDtwWindow.size >= 900) {
+                        hrDtwWindow.removeAt(0)
+                    }
 
-                    // 2. Alte Punkte entfernen
-                    hrDtwWindow.removeAll { it.second < currentTime - dtwWindowSek }
+                    hrDtwWindow.add(heartRate.toDouble())
+                    Log.i("ExerciseClientManager", "HR Windowsize: ${hrDtwWindow.size}")
 
                     // 3. DTW-Analyse starten
-                    if (hrDtwWindow.size > 20) {
+                    if (hrDtwWindow.size > 780) {
+                        Log.i("ExerciseClientManager", "Got at least 13 minutes of Data. Size: ${hrDtwWindow.size}. Starting DTW analysis")
                         runDtwAnalysis()
                     }
                 }
             }
         }
 
+        var dtwDistance: Double = 0.0
+        var calmDtwDistance: Double = Double.MAX_VALUE
+
         private fun runDtwAnalysis() {
             managerScope.launch {
                 // Extrahiere nur die HR-Werte aus deinem Fenster
-                val liveHrValues = hrDtwWindow.map { it.first }.toDoubleArray()
-
+                val liveHrValues = hrDtwWindow.toDoubleArray()
                 // WICHTIG: Interpoliere die Live-Daten, damit sie die gleiche Länge wie das Template haben!
                 // DTW kann mit unterschiedlich langen Reihen umgehen, aber für den Vergleich ist gleiche Länge besser.
                 val interpolatedLiveValues = interpolate(liveHrValues, prePanicTemplate.size)
 
                 // DTW-Distanz berechnen
-                val dtwDistance = DynamicTimeWarping.calculateDistance(prePanicTemplate, interpolatedLiveValues)
+                if(breathingExerciseJob?.isActive == true) {
+                    calmDtwDistance = DynamicTimeWarping.calculateDistance(postPanicTemplate, interpolatedLiveValues)
+                }
+                 dtwDistance = DynamicTimeWarping.calculateDistance(prePanicTemplate, interpolatedLiveValues)
 
                 Log.d("DTW_Analysis", "DTW Distance: $dtwDistance")
 
                 // Definiere einen Schwellenwert für die Distanz.
                 // Wenn die Distanz UNTER diesem Wert liegt, sind die Kurven sehr ähnlich.
                 // Dieser Wert muss durch Experimentieren gefunden werden!
-                val dtwThreshold = 500.0 // Fiktiver Startwert!
+                val dtwThreshold = 1000.0 // Fiktiver Startwert!
 
-                if (dtwDistance < dtwThreshold) {
-                    Log.w("DTW_Analysis", "PANIC ATTACK PATTERN DETECTED! Distance: $dtwDistance")
-                    heartRateCriticalMutableFlow.value = true
+                if (dtwDistance < dtwThreshold || calmDtwDistance < dtwThreshold) {
+                    Log.w("DTW_Analysis", "PANIC ATTACK PATTERNS panic Distance: $dtwDistance, calm Distance: $calmDtwDistance")
+
+                    if(dtwDistance >= calmDtwDistance) {
+                        heartRateCriticalMutableFlow.value = true
+                    } else {
+                        heartRateCriticalMutableFlow.value = false
+                    }
                 }
             }
         }
@@ -238,7 +248,6 @@ constructor(
             }
             return result
         }
-
     }
 
     suspend fun startHrMonitoring() {
@@ -249,10 +258,9 @@ constructor(
             return
         }
 
-        val samplingRate = SensorManager.SENSOR_DELAY_GAME // vieeeel zu schnell tbh ich brauch nur 1Hz für den WESAD Datensatz
-        sensorManager.registerListener(sensorListener, heartRateSensor, samplingRate)
+        sensorManager.registerListener(sensorListener, heartRateSensor, 1_000_000)
 
-        // hier wird die Companionapp gestartet
+        // hier wird die Companionapp gestartet (Daten werden danach empfangen)
         val exec : Executor = Executors.newSingleThreadExecutor()
         val connectedNodes = Tasks.await(Wearable.getNodeClient(applicationContext).connectedNodes)
         Log.i("ExerciseClientManager", "Connected nodes: $connectedNodes. Trying to start remote companion.")
@@ -275,10 +283,10 @@ constructor(
 
     private fun stopHrMonitoring() {
         sensorManager.unregisterListener(sensorListener)
+        hrDtwWindow.clear()
         Log.i("DTW_Sensor", "SensorListener deregistriert.")
     }
 }
-
 
 private fun logMetrics(metrics: DataPointContainer) {
     metrics.getData(DataType.HEART_RATE_BPM).forEach { dataPoint ->
@@ -287,19 +295,4 @@ private fun logMetrics(metrics: DataPointContainer) {
         Log.d("ExerciseService_HR_Background", "Measured Heartrate (im Service): $bpm BPM, Zeitstempel: $timeStamp")
 
     }
-}
-
-
-sealed class ExerciseMessage {
-    class ExerciseUpdateMessage(
-        val exerciseUpdate: ExerciseUpdate
-    ) : ExerciseMessage()
-
-    class LapSummaryMessage(
-        val lapSummary: ExerciseLapSummary
-    ) : ExerciseMessage()
-
-    class LocationAvailabilityMessage(
-        val locationAvailability: LocationAvailability
-    ) : ExerciseMessage()
 }

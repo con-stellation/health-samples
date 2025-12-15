@@ -19,7 +19,6 @@ import android.annotation.SuppressLint
 import android.app.Service
 import androidx.health.services.client.data.ExerciseUpdate
 import com.example.healthapp.data.ExerciseClientManager
-import com.example.healthapp.data.ExerciseMessage
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
