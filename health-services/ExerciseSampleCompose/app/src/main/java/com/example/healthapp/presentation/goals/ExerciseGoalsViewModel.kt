@@ -41,6 +41,5 @@ constructor(
     fun setGoals(thresholds: Thresholds) {
         _distanceGoal.value = thresholds.distance
         _durationGoal.value = thresholds.duration
-        exerciseClientManager.updateGoals(thresholds)
     }
 }

@@ -24,21 +24,7 @@ class DataEvaluationService @Inject constructor(private val dataStoreManager: Da
         if(stressscore > 70) {
             phoneAFriend.sendMessageToContact(false, stressscore)
         }
-        val restingHr = data?.get(DataIndices.RESTING_HR.ordinal) ?:70
-        val thresh = dataStoreManager.readThresholds().first().getOrNull(1)
-        val thresholds = ArrayList<Int?>()
-        thresholds.add(restingHr + 15) // TODO auch anpassen je nach Minimum oder immer "aktuellen" nehmen? --> Der Aktuelle ist ja ein Durchschnittswert der letzten 7 Tage also ist das so schon okay
-
-        if (thresh != null) {
-            if(thresh > (restingHr+30)) {
-                thresholds.add(restingHr + 30)
-                dataStoreManager.saveThresholds(data)
-            } else {
-                thresholds.add(thresh)
-                dataStoreManager.saveThresholds(data)
-            }
-        }
-        }
+    }
 
 
     suspend fun evaluateData(data: Int) {

@@ -77,7 +77,7 @@ fun ExerciseRoute(
     val panicViewModel: PanicViewModel = hiltViewModel()
 
     val showPanicDialog = panicViewModel.isPanicDetected.collectAsState().value
-    val checkIfStillNeeded = panicViewModel.showInterventionDialog
+    val checkIfStillNeeded = panicViewModel.showInterventionDialog.collectAsState().value
 
     if (showPanicDialog || checkIfStillNeeded) {
         PanicDetectedAlert(

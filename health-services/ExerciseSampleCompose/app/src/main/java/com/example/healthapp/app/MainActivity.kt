@@ -44,7 +44,7 @@ class MainActivity : FragmentActivity() {
         val allGranted = permissions.values.all { it }
         if (allGranted) {
             // All permissions granted, proceed with exercise
-            exerciseViewModel.startExercise()
+            //exerciseViewModel.startExercise()
         }
     }
 

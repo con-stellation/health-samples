@@ -23,20 +23,11 @@ class DataStoreManager @Inject constructor(@ApplicationContext private val conte
     val EXERCISE_CHOICE = intPreferencesKey("exercise_choice")
     val HRV = intPreferencesKey("hrv")
     val STRESS_SCORE = intPreferencesKey("stress_score")
-    val HR_MIN_THRESH = intPreferencesKey("hr_min_thresh")
-    val HR_MAX_THRESH = intPreferencesKey("hr_max_thresh")
     val RESTING_HR = intPreferencesKey("resting_hr")
 
     fun readExerciseChoice(): Flow<Int> = context.dataStore.data.map { preferences ->
         val i = preferences[EXERCISE_CHOICE]
         i ?: 0
-    }
-
-    fun readThresholds(): Flow<ArrayList<Int?>> = context.dataStore.data.map { preferences ->
-        val list = ArrayList<Int?>()
-        list.add(preferences[HR_MIN_THRESH])
-        list.add(preferences[HR_MAX_THRESH])
-        list
     }
 
     suspend fun saveExerciseChoice(choice: Int) {
@@ -56,15 +47,4 @@ class DataStoreManager @Inject constructor(@ApplicationContext private val conte
             }
         }
     }
-
-    suspend fun saveThresholds(data: ArrayList<Int?>?) {
-        Log.i("DataStoreManager", "Saving thresholds: $data")
-        context.dataStore.updateData {
-            it.toMutablePreferences().also { preferences ->
-                preferences[HR_MAX_THRESH] = data?.get(1) ?:100
-                preferences[HR_MIN_THRESH] = data?.get(0) ?:70
-            }
-        }
-    }
-
 }
