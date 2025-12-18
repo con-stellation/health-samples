@@ -74,10 +74,29 @@ fun ExerciseRoute(
     onFinishActivity: () -> Unit,
 ) {
     val viewModel = hiltViewModel<ExerciseViewModel>()
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val panicViewModel: PanicViewModel = hiltViewModel()
 
-    if (uiState.isEnded) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val exerciseEnded by viewModel.exerciseEndedFlow.collectAsState()
+    var dismissedDialog = false
+
+    val showPanicDialog = panicViewModel.isPanicDetected.collectAsState().value
+    val checkIfStillNeeded = panicViewModel.showInterventionDialog.collectAsState().value
+
+    if (showPanicDialog || checkIfStillNeeded) {
+        PanicDetectedAlert(
+            showDialog = (true),
+            onPositive = { panicViewModel.confirmAssistance() },
+            onNegative = {
+                panicViewModel.onDismissDialog()
+                dismissedDialog = true
+            }
+        )
+    }
+
+    if (exerciseEnded || dismissedDialog) {
         SideEffect {
+            dismissedDialog = false
             onSummary(uiState.toSummary())
         }
     }
@@ -93,9 +112,9 @@ fun ExerciseRoute(
             ExerciseScreen(
                 ambientState = ambientState,
                 onPauseClick = { viewModel.pauseExercise() },
-                onEndClick = { viewModel.endMonitoring() },
+                onEndClick = { viewModel.endExercise() },
                 onResumeClick = { viewModel.resumeExercise() },
-                onStartClick = { viewModel.startMonitoring() },
+                onStartClick = { viewModel.startExercise() },
                 uiState = uiState,
                 modifier = modifier
             )

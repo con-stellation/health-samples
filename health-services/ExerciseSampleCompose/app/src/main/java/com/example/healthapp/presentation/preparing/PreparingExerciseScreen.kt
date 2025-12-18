@@ -101,7 +101,7 @@ fun PreparingExerciseRoute(
     AmbientAware { ambientState ->
         PreparingExerciseScreen(
             onStart = {
-                viewModel.startMonitoring()
+                viewModel.startExercise()
                 onStart()
             },
             uiState = uiState,
@@ -135,8 +135,6 @@ fun PreparingExerciseScreen(
     onMonitor: () -> Unit = {},
     onGoals: () -> Unit = {}
 ) {
-    val location = (uiState as? PreparingScreenState.Preparing)?.locationAvailability
-
     val columnState = rememberTransformingLazyColumnState()
     val contentPadding = rememberResponsiveColumnPadding(
         first = ColumnItemType.BodyText,
@@ -179,7 +177,7 @@ fun PreparingExerciseScreen(
                         horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.CenterVertically) {
                         FilledIconButton(
-                            onClick = onMonitor,
+                            onClick = onStart,
                             enabled = uiState is PreparingScreenState.Preparing
                         ) {
                             Icon(
@@ -189,7 +187,7 @@ fun PreparingExerciseScreen(
                         }
 
                         FilledIconButton(
-                            onClick = onStart,
+                            onClick = onMonitor,
                             enabled = uiState is PreparingScreenState.Preparing
                         ) {
                             Icon(

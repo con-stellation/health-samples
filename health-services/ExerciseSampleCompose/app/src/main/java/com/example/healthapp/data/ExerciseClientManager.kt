@@ -44,7 +44,6 @@ import androidx.health.services.client.data.LocationAvailability
 import androidx.health.services.client.data.WarmUpConfig
 import androidx.health.services.client.endExercise
 import androidx.health.services.client.getCapabilities
-import androidx.health.services.client.markLap
 import androidx.health.services.client.pauseExercise
 import androidx.health.services.client.prepareExercise
 import androidx.health.services.client.resumeExercise
@@ -66,14 +65,12 @@ import com.example.healthapp.service.DynamicTimeWarping
 import com.example.healthapp.service.RealityCheck
 import com.google.android.gms.tasks.Tasks
 import kotlin.math.min
-import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 /**
@@ -130,7 +127,7 @@ constructor(
         Log.i("ExerciseClientManager", "Connected nodes: $connectedNodes. Trying to start remote companion.")
         if(!connectedNodes.isEmpty()){
             val remoteActivityHelper = RemoteActivityHelper(applicationContext, exec)
-            val remoteResult = remoteActivityHelper.startRemoteActivity(
+            remoteActivityHelper.startRemoteActivity(
                 Intent(Intent.ACTION_VIEW).addCategory(Intent.CATEGORY_BROWSABLE).setData("companionapp://sms92".toUri()),
                 connectedNodes[0].id
             ).await()
@@ -302,13 +299,13 @@ constructor(
         if (breathingExerciseJob?.isActive != true) {
             Log.i("ExerciseClientManager", "Starting breathing exercise")
             //val startTime = System.currentTimeMillis()
-            managerScope.launch {
-                delay(60000 * 10) // wait 10 min and ask again
-                // TODO how to signal panicViewModel that we need to show dialog...
-                Log.i("ExerciseClientManager", "10 minutes have passed...")
-                tenMinutesPassedMutableFlow.value = true
-            }
             breathingExerciseJob = realityCheck.executeVibration(managerScope, vibrator)
+        }
+        managerScope.launch {
+            delay(60000 * 10) // wait 10 min and ask again
+            // TODO how to signal panicViewModel that we need to show dialog...
+            Log.i("ExerciseClientManager", "10 minutes have passed...")
+            tenMinutesPassedMutableFlow.value = true
         }
     }
 

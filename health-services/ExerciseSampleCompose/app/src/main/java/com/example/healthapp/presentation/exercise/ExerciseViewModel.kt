@@ -21,8 +21,10 @@ import com.example.healthapp.data.HealthServicesRepository
 import com.example.healthapp.data.ServiceState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
@@ -32,6 +34,10 @@ class ExerciseViewModel
 constructor(
     private val healthServicesRepository: HealthServicesRepository
 ) : ViewModel() {
+
+    private val exerciseEndedMutableFlow = MutableStateFlow(false)
+    val exerciseEndedFlow = exerciseEndedMutableFlow.asStateFlow()
+
     val uiState: StateFlow<ExerciseScreenState> =
         healthServicesRepository.serviceState
             .map {
@@ -59,16 +65,18 @@ constructor(
     suspend fun isExerciseInProgress(): Boolean =
         healthServicesRepository.isExerciseInProgress()
 
-    fun startMonitoring() {
-        healthServicesRepository.startMonitoring()
+    fun startExercise() {
+        exerciseEndedMutableFlow.value = false
+        healthServicesRepository.startExercise()
     }
 
     fun pauseExercise() {
         healthServicesRepository.pauseExercise()
     }
 
-    fun endMonitoring() {
-        healthServicesRepository.endMonitoring()
+    fun endExercise() {
+        exerciseEndedMutableFlow.value = true
+        healthServicesRepository.endExercise()
     }
 
     fun resumeExercise() {
