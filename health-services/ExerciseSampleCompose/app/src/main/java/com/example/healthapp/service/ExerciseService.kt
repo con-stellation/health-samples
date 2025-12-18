@@ -71,13 +71,17 @@ class ExerciseService : LifecycleService() {
     }
 
     /**
-     * Start exercise in this service's coroutine context.
+     * Start monitoring in this service's coroutine context.
      */
-    suspend fun startExercise() {
+    suspend fun startMonitoring() {
         postOngoingActivityNotification()
         exerciseClientManager.startHrMonitoring()
     }
 
+    fun startExercise() {
+        postOngoingActivityNotification()
+        exerciseClientManager.startBreathingExercise()
+    }
     /**
      * Pause exercise in this service's coroutine context.
      */
@@ -95,11 +99,15 @@ class ExerciseService : LifecycleService() {
     /**
      * End exercise in this service's coroutine context.
      */
-    suspend fun endExercise() {
-        exerciseClientManager.endExercise()
+    suspend fun endMonitoring() {
+        exerciseClientManager.endMonitoring()
         removeOngoingActivityNotification()
     }
 
+    fun endExercise() {
+        exerciseClientManager.endBreathingExercise()
+        removeOngoingActivityNotification()
+    }
 
     override fun onStartCommand(
         intent: Intent?,
@@ -139,7 +147,7 @@ class ExerciseService : LifecycleService() {
                     ExerciseState.PREPARING
                 ) {
                     lifecycleScope.launch {
-                        endExercise()
+                        endMonitoring()
                     }
                 }
                 // We have nothing to do, so we can stop.

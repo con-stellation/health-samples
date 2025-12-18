@@ -206,10 +206,15 @@ constructor(
         }
     }
 
-    suspend fun endExercise() {
-        logger.log("Ending exercise")
+    suspend fun endMonitoring() {
+        logger.log("Ending monitoring")
         stopHrMonitoring()
         exerciseClient.endExercise()
+    }
+
+    fun endBreathingExercise() {
+        logger.log("Ending exercise")
+        stopHrMonitoring()
     }
 
     suspend fun pauseExercise() {

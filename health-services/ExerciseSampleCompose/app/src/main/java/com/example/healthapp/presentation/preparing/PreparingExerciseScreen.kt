@@ -21,10 +21,12 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.MonitorHeart
+import androidx.compose.material.icons.filled.SelfImprovement
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -39,20 +41,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.times
-import androidx.health.services.client.data.LocationAvailability
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.wear.compose.foundation.CurvedLayout
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
-import androidx.wear.compose.material3.CompactButton
 import androidx.wear.compose.material3.FilledIconButton
 import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.Text
-import androidx.wear.compose.material3.curvedText
 import androidx.wear.compose.ui.tooling.preview.WearPreviewDevices
 import com.example.healthapp.R
 import com.example.healthapp.data.ServiceState
@@ -70,7 +67,8 @@ fun PreparingExerciseRoute(
     onStart: () -> Unit,
     onFinishActivity: () -> Unit,
     onNoExerciseCapabilities: () -> Unit,
-    onGoals: () -> Unit
+    onGoals: () -> Unit,
+    onStartMonitoring: () -> Unit
 ) {
     val viewModel = hiltViewModel<PreparingViewModel>()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -103,12 +101,16 @@ fun PreparingExerciseRoute(
     AmbientAware { ambientState ->
         PreparingExerciseScreen(
             onStart = {
-                viewModel.startExercise()
+                viewModel.startMonitoring()
                 onStart()
             },
             uiState = uiState,
             onGoals = { onGoals() },
-            ambientState = ambientState
+            ambientState = ambientState,
+            onMonitor = {
+                viewModel.startMonitoring()
+                onStartMonitoring()
+            }
         )
     }
 
@@ -130,6 +132,7 @@ fun PreparingExerciseScreen(
     uiState: PreparingScreenState,
     ambientState: AmbientState,
     onStart: () -> Unit = {},
+    onMonitor: () -> Unit = {},
     onGoals: () -> Unit = {}
 ) {
     val location = (uiState as? PreparingScreenState.Preparing)?.locationAvailability
@@ -171,15 +174,31 @@ fun PreparingExerciseScreen(
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    FilledIconButton(
-                        onClick = onStart,
-                        enabled = uiState is PreparingScreenState.Preparing
-                    ) {
-                        Icon(
-                            Icons.Default.PlayArrow,
-                            contentDescription = stringResource(id = R.string.start)
-                        )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically) {
+                        FilledIconButton(
+                            onClick = onMonitor,
+                            enabled = uiState is PreparingScreenState.Preparing
+                        ) {
+                            Icon(
+                                Icons.Filled.SelfImprovement,
+                                contentDescription = stringResource(id = R.string.breathe)
+                            )
+                        }
+
+                        FilledIconButton(
+                            onClick = onStart,
+                            enabled = uiState is PreparingScreenState.Preparing
+                        ) {
+                            Icon(
+                                Icons.Default.MonitorHeart,
+                                contentDescription = stringResource(id = R.string.monitor)
+                            )
+                        }
                     }
+
                 }
             }
         }

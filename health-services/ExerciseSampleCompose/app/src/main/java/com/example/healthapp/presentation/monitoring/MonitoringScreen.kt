@@ -15,7 +15,7 @@
  */
 @file:OptIn(ExperimentalHorologistApi::class)
 
-package com.example.healthapp.presentation.exercise
+package com.example.healthapp.presentation.monitoring
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -67,13 +67,27 @@ import com.google.android.horologist.health.composables.ActiveDurationText
 import kotlinx.coroutines.launch
 
 @Composable
-fun ExerciseRoute(
+fun MonitoringRoute(
     modifier: Modifier = Modifier,
     onSummary: (SummaryScreenState) -> Unit,
     onRestart: () -> Unit,
     onFinishActivity: () -> Unit,
 ) {
-    val viewModel = hiltViewModel<ExerciseViewModel>()
+
+    val panicViewModel: PanicViewModel = hiltViewModel()
+
+    val showPanicDialog = panicViewModel.isPanicDetected.collectAsState().value
+    val checkIfStillNeeded = panicViewModel.showInterventionDialog.collectAsState().value
+
+    if (showPanicDialog || checkIfStillNeeded) {
+        PanicDetectedAlert(
+            showDialog = (true),
+            onPositive = { panicViewModel.confirmAssistance() },
+            onNegative = { panicViewModel.onDismissDialog() }
+        )
+    }
+
+    val viewModel = hiltViewModel<MonitoringViewModel>()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     if (uiState.isEnded) {
@@ -90,11 +104,11 @@ fun ExerciseRoute(
         )
     } else {
         AmbientAware { ambientState ->
-            ExerciseScreen(
+            MonitoringScreen(
                 ambientState = ambientState,
-                onPauseClick = { viewModel.pauseExercise() },
+                onPauseClick = { viewModel.pauseMonitoring() },
                 onEndClick = { viewModel.endMonitoring() },
-                onResumeClick = { viewModel.resumeExercise() },
+                onResumeClick = { viewModel.resumeMonitoring() },
                 onStartClick = { viewModel.startMonitoring() },
                 uiState = uiState,
                 modifier = modifier
@@ -110,7 +124,7 @@ fun ExerciseRoute(
 fun ErrorStartingExerciseScreen(
     onRestart: () -> Unit,
     onFinishActivity: () -> Unit,
-    uiState: ExerciseScreenState
+    uiState: MonitoringScreenState
 ) {
     AlertDialog(
         title = { Text(stringResource(id = R.string.error_starting_exercise)) },
@@ -146,13 +160,13 @@ fun ErrorStartingExerciseScreen(
  * Shows while an exercise is in progress
  */
 @Composable
-fun ExerciseScreen(
+fun MonitoringScreen(
     ambientState: AmbientState,
     onPauseClick: () -> Unit,
     onEndClick: () -> Unit,
     onResumeClick: () -> Unit,
     onStartClick: () -> Unit,
-    uiState: ExerciseScreenState,
+    uiState: MonitoringScreenState,
     modifier: Modifier = Modifier
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -165,7 +179,7 @@ fun ExerciseScreen(
         ) { page ->
             ScreenScaffold {
                     if (page == 0) {
-                        ExerciseControlButtons(
+                        MonitoringControlButtons(
                             uiState = uiState,
                             onStartClick = onStartClick,
                             onEndClick = onEndClick,
@@ -193,7 +207,7 @@ fun ExerciseScreen(
 
 @Composable
 private fun ExerciseMetrics(
-    uiState: ExerciseScreenState,
+    uiState: MonitoringScreenState,
     modifier: Modifier = Modifier,
     onEndClick: () -> Unit
 ) {
@@ -213,8 +227,8 @@ private fun ExerciseMetrics(
 }
 
 @Composable
-private fun ExerciseControlButtons(
-    uiState: ExerciseScreenState,
+private fun MonitoringControlButtons(
+    uiState: MonitoringScreenState,
     onStartClick: () -> Unit,
     onEndClick: () -> Unit,
     onResumeClick: () -> Unit,
@@ -243,7 +257,7 @@ private fun ExerciseControlButtons(
 }
 
 @Composable
-private fun HeartRateRow(uiState: ExerciseScreenState) {
+private fun HeartRateRow(uiState: MonitoringScreenState) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceAround
@@ -257,7 +271,7 @@ private fun HeartRateRow(uiState: ExerciseScreenState) {
 }
 
 @Composable
-private fun DurationRow(uiState: ExerciseScreenState) {
+private fun DurationRow(uiState: MonitoringScreenState) {
     val lastActiveDurationCheckpoint = uiState.exerciseState?.activeDurationCheckpoint
     val exerciseState = uiState.exerciseState?.exerciseState
     Row(
@@ -287,14 +301,14 @@ private fun DurationRow(uiState: ExerciseScreenState) {
 
 @WearPreviewDevices
 @Composable
-fun ExerciseScreenPreview() {
+fun MonitoringScreenPreview() {
     ThemePreview {
-        ExerciseScreen(
+        MonitoringScreen(
             onPauseClick = {},
             onEndClick = {},
             onResumeClick = {},
             onStartClick = {},
-            uiState = ExerciseScreenState(
+            uiState = MonitoringScreenState(
                 hasExerciseCapabilities = true,
                 isTrackingAnotherExercise = false,
                 serviceState = ServiceState.Connected(
@@ -314,7 +328,7 @@ fun ErrorStartingExerciseScreenPreview() {
         ErrorStartingExerciseScreen(
             onRestart = {},
             onFinishActivity = {},
-            uiState = ExerciseScreenState(
+            uiState = MonitoringScreenState(
                 hasExerciseCapabilities = true,
                 isTrackingAnotherExercise = false,
                 serviceState = ServiceState.Connected(
@@ -330,8 +344,8 @@ fun ErrorStartingExerciseScreenPreview() {
 @Composable
 fun ExerciseControlButtonsPreview() {
     ThemePreview {
-        ExerciseControlButtons(
-            uiState = ExerciseScreenState(
+        MonitoringControlButtons(
+            uiState = MonitoringScreenState(
                 hasExerciseCapabilities = true,
                 isTrackingAnotherExercise = false,
                 serviceState = ServiceState.Connected(

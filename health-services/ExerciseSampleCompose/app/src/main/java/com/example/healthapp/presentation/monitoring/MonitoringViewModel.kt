@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.example.healthapp.presentation.exercise
+package com.example.healthapp.presentation.monitoring
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -27,15 +27,15 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
 @HiltViewModel
-class ExerciseViewModel
+class MonitoringViewModel
 @Inject
 constructor(
     private val healthServicesRepository: HealthServicesRepository
 ) : ViewModel() {
-    val uiState: StateFlow<ExerciseScreenState> =
+    val uiState: StateFlow<MonitoringScreenState> =
         healthServicesRepository.serviceState
             .map {
-                ExerciseScreenState(
+                MonitoringScreenState(
                     hasExerciseCapabilities = healthServicesRepository.hasExerciseCapability(),
                     isTrackingAnotherExercise =
                     healthServicesRepository
@@ -47,7 +47,7 @@ constructor(
                 viewModelScope,
                 SharingStarted.WhileSubscribed(3_000),
                 healthServicesRepository.serviceState.value.let {
-                    ExerciseScreenState(
+                    MonitoringScreenState(
                         true,
                         false,
                         it,
@@ -63,7 +63,7 @@ constructor(
         healthServicesRepository.startMonitoring()
     }
 
-    fun pauseExercise() {
+    fun pauseMonitoring() {
         healthServicesRepository.pauseExercise()
     }
 
@@ -71,7 +71,7 @@ constructor(
         healthServicesRepository.endMonitoring()
     }
 
-    fun resumeExercise() {
+    fun resumeMonitoring() {
         healthServicesRepository.resumeExercise()
     }
 }

@@ -44,6 +44,10 @@ constructor(
         }
     }
 
+    fun startMonitoring() {
+        healthServicesRepository.startMonitoring()
+    }
+
     fun startExercise() {
         healthServicesRepository.startExercise()
     }

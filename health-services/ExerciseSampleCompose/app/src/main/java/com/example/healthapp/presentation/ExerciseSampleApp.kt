@@ -17,8 +17,6 @@ package com.example.healthapp.presentation
 
 import ExerciseGoalsRoute
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
@@ -32,8 +30,8 @@ import com.example.healthapp.app.Screen.PreparingExercise
 import com.example.healthapp.app.Screen.Summary
 import com.example.healthapp.app.navigateToTopLevel
 import com.example.healthapp.presentation.dialogs.ExerciseNotAvailable
-import com.example.healthapp.presentation.dialogs.PanicDetectedAlert
 import com.example.healthapp.presentation.exercise.ExerciseRoute
+import com.example.healthapp.presentation.monitoring.MonitoringRoute
 import com.example.healthapp.presentation.preparing.PreparingExerciseRoute
 import com.example.healthapp.presentation.summary.SummaryRoute
 
@@ -58,6 +56,7 @@ fun ExerciseSampleApp(
                             }
                         }
                     },
+
                     onNoExerciseCapabilities = {
                         navController.navigate(ExerciseNotAvailable.route) {
                             popUpTo(navController.graph.id) {
@@ -66,12 +65,30 @@ fun ExerciseSampleApp(
                         }
                     },
                     onFinishActivity = onFinishActivity,
-                    onGoals = { navController.navigate(Screen.Goals.route) }
+                    onGoals = { navController.navigate(Screen.Goals.route) },
+                    onStartMonitoring = {
+                        navController.navigate(Screen.Monitoring.route) {
+                            popUpTo(navController.graph.id) {
+                                inclusive = false
+                            }
+                        }
+                    }
                 )
             }
 
             composable(Exercise.route) {
                 ExerciseRoute(
+                    onSummary = {
+                        navController.navigateToTopLevel(Summary, Summary.buildRoute(it))
+                    },
+                    onRestart = {
+                        navController.navigateToTopLevel(PreparingExercise)
+                    },
+                    onFinishActivity = onFinishActivity
+                )
+            }
+            composable(Screen.Monitoring.route) {
+                MonitoringRoute(
                     onSummary = {
                         navController.navigateToTopLevel(Summary, Summary.buildRoute(it))
                     },

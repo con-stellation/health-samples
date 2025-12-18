@@ -18,7 +18,8 @@
 
     <!-- Screens -->
     <string name="preparing_exercise">Preparing\nsensors</string>
-    <string name="start">Start</string>
+    <string name="breathe">Breathe</string>
+    <string name="monitor">Monitor</string>
     <string name="starting_up">Starting up</string>
     <string name="not_avail">Exercise not available on this device</string>
     <string name="error_starting_exercise">Error starting exercise</string>

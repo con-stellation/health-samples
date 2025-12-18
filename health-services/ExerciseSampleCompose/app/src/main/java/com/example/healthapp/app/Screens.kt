@@ -30,6 +30,8 @@ sealed class Screen(
     object Goals : Screen(route = "goals")
 
     object Panic : Screen(route = "panic")
+    object Monitoring : Screen(route = "monitoring")
+
 
     object Summary : Screen("summaryScreen") {
         fun buildRoute(summary: SummaryScreenState): String =

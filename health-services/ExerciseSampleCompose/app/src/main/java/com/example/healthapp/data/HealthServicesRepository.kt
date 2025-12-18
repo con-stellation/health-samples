@@ -87,10 +87,20 @@ constructor(
             }
         }
 
-    fun startExercise() =
+    fun startMonitoring() =
         serviceCall {
             try {
                 errorState.value = null
+                startMonitoring()
+            } catch (e: Exception) {
+                errorState.value = e.message
+                logger.error("Error starting exercise", e.fillInStackTrace())
+            }
+        }
+
+    fun startExercise() =
+        serviceCall {
+            try {
                 startExercise()
             } catch (e: Exception) {
                 errorState.value = e.message
@@ -98,10 +108,12 @@ constructor(
             }
         }
 
+
     fun pauseExercise() = serviceCall { pauseExercise() }
 
-    fun endExercise() = serviceCall { endExercise() }
+    fun endMonitoring() = serviceCall { endMonitoring() }
 
+    fun endExercise() = serviceCall { endExercise() }
     fun resumeExercise() = serviceCall { resumeExercise() }
 }
 
