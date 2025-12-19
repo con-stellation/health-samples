@@ -104,7 +104,7 @@ class ExerciseService : LifecycleService() {
         removeOngoingActivityNotification()
     }
 
-    fun endExercise() {
+    suspend fun endExercise() {
         exerciseClientManager.endBreathingExercise()
         removeOngoingActivityNotification()
     }

@@ -67,7 +67,7 @@ constructor(
     @SuppressLint("RestrictedApi")
     private fun processExerciseUpdate(exerciseUpdate: ExerciseUpdate) {
         // Dismiss any ongoing activity notification.
-        if (exerciseUpdate.exerciseStateInfo.state.isEnded) {
+        if (exerciseUpdate.exerciseStateInfo.state.isEnded && exerciseClientManager.monitoringEnded.value) {
             exerciseService.removeOngoingActivityNotification()
         }
 

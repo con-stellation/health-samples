@@ -246,7 +246,7 @@ private fun ExerciseControlButtons(
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (uiState.isEnding) {
+            if (uiState.isEnding) { // TODO hier villeicht mit sowas wie exerciseClientManager.monitoringEnded.value arbeiten statt uiState?
                 StartButton(onStartClick)
             } else {
                 StopButton(onEndClick)

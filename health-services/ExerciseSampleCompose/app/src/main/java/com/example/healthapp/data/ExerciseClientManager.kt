@@ -118,73 +118,6 @@ constructor(
         }
     }
 
-
-    suspend fun startExercise() {
-        Log.i("ExerciseClientManager", "Starting exercise")
-
-        val exec : Executor = Executors.newSingleThreadExecutor()
-        val connectedNodes = Tasks.await(Wearable.getNodeClient(applicationContext).connectedNodes)
-        Log.i("ExerciseClientManager", "Connected nodes: $connectedNodes. Trying to start remote companion.")
-        if(!connectedNodes.isEmpty()){
-            val remoteActivityHelper = RemoteActivityHelper(applicationContext, exec)
-            remoteActivityHelper.startRemoteActivity(
-                Intent(Intent.ACTION_VIEW).addCategory(Intent.CATEGORY_BROWSABLE).setData("companionapp://sms92".toUri()),
-                connectedNodes[0].id
-            ).await()
-
-            try {
-                Log.i("WearOSRemote", "Remote Activity Started?")
-            } catch (e: Exception) {
-                Log.e("WearOSRemote", "Fehler beim Starten der Remote Activity", e)
-            }
-        } else {
-            Log.i("ExerciseClientService", "No connected devices detected. Cannot launch remote Companion.")
-        }
-
-        // Types for which we want to receive metrics. Only ask for ones that are supported.
-        val capabilities = getExerciseCapabilities()
-
-        if (capabilities == null) {
-            logger.log("No capabilities")
-            return
-        }
-
-        val dataTypes =
-            setOf(
-                DataType.HEART_RATE_BPM,
-                DataType.HEART_RATE_BPM_STATS,
-                DataType.CALORIES_TOTAL,
-                DataType.DISTANCE_TOTAL
-            ).intersect(capabilities.supportedDataTypes)
-        val exerciseGoals = mutableListOf<ExerciseGoal<*>>()
-        if (supportsCalorieGoal(capabilities)) {
-            // Create a one-time goal.
-            exerciseGoals.add(
-                ExerciseGoal.createOneTimeGoal(
-                    DataTypeCondition(
-                        dataType = DataType.CALORIES_TOTAL,
-                        threshold = CALORIES_THRESHOLD,
-                        comparisonType = ComparisonType.GREATER_THAN_OR_EQUAL
-                    )
-                )
-            )
-        }
-
-        val supportsAutoPauseAndResume = capabilities.supportsAutoPauseAndResume
-
-        val config =
-            ExerciseConfig(
-                exerciseType = ExerciseType.RUNNING,
-                dataTypes = dataTypes,
-                isAutoPauseAndResumeEnabled = supportsAutoPauseAndResume,
-                isGpsEnabled = true,
-                exerciseGoals = exerciseGoals
-            )
-
-        exerciseClient.startExercise(config)
-        logger.log("Started exercise")
-    }
-
     /***
      * Note: don't call this method from outside of ExerciseService.kt
      * when acquiring calories or distance.
@@ -206,12 +139,17 @@ constructor(
     suspend fun endMonitoring() {
         logger.log("Ending monitoring")
         stopHrMonitoring()
-        exerciseClient.endExercise()
+        if(exerciseClient.isExerciseInProgress()) {
+            exerciseClient.endExercise()
+        }
     }
 
-    fun endBreathingExercise() {
+    suspend fun endBreathingExercise() {
         logger.log("Ending exercise")
         stopHrMonitoring()
+        if(exerciseClient.isExerciseInProgress()) {
+            exerciseClient.endExercise()
+        }
     }
 
     suspend fun pauseExercise() {

@@ -96,8 +96,9 @@ fun MonitoringRoute(
 
     val viewModel = hiltViewModel<MonitoringViewModel>()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val exerciseEnded by viewModel.exerciseEndedFlow.collectAsState()
 
-    if (uiState.isEnded) {
+    if (exerciseEnded) {
         SideEffect {
             onSummary(uiState.toSummary())
         }
