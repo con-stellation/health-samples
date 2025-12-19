@@ -303,7 +303,7 @@ constructor(
         }
         managerScope.launch {
             delay(60000 * 10) // wait 10 min and ask again
-            // TODO how to signal panicViewModel that we need to show dialog...
+            // signal panicViewModel that we need to show dialog...
             Log.i("ExerciseClientManager", "10 minutes have passed...")
             tenMinutesPassedMutableFlow.value = true
         }
@@ -382,6 +382,9 @@ constructor(
                 if(dtwDistance <= calmDtwDistance) {
                     heartRateCriticalMutableFlow.value = true
                 } else {
+                    // wenn nach 10sek trotz calm hr die Übung ausgeführt wird, wird dieses False egal sein solange der Wert nicht zwischendurch auf true gewechselt ist
+                    // das ist gut, weil: wenn man nicht "calm" war, so wird eine weitere Calm-erkennung mit denselben Mustern nicht einen direkten Unterscheid aufweisen
+                    // bzw... dann würde sowieso die ganze Zeit der Dialog gespammt werden mit denselben Ergebnissen.
                     heartRateCriticalMutableFlow.value = false
                 }
                 calmDtwDistance = Double.MAX_VALUE
