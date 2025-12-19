@@ -17,25 +17,40 @@ package com.example.healthapp.presentation.screen
 
 import android.util.Log
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.add
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.AlertDialog
 import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.OutlinedTextField
+import androidx.compose.material.RadioButton
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.health.connect.client.HealthConnectClient.Companion.SDK_AVAILABLE
@@ -45,6 +60,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.healthapp.R
 import com.example.healthapp.presentation.component.InstalledMessage
 import com.example.healthapp.presentation.component.NotInstalledMessage
@@ -63,14 +79,41 @@ fun WelcomeScreen(
     onLoadData: () -> Unit,
     generateData: () -> Unit,
     deleteAllGeneratedData: () -> Unit = {},
-    lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current
+    lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current,
+    viewModel: WelcomeScreenViewModel = viewModel()
 ) {
+    val initialInputStep by viewModel.initUserInputStep.collectAsState()
     val currentOnLoadData by rememberUpdatedState(onLoadData)
     // Add a listener to re-check whether Health Connect has been installed each time the Welcome
     // screen is resumed: This ensures that if the user has been redirected to the Play store and
     // followed the onboarding flow, then when the app is resumed, instead of showing the message
     // to ask the user to install Health Connect, the app recognises that Health Connect is now
     // available and shows the appropriate welcome.
+
+    when(initialInputStep) {
+        initialUserInputSteps.PhoneNumber -> {
+            PhoneNumberDialog(
+                onConfirm = { number -> viewModel.onPhoneNumberConfirmed(number) },
+                onDismiss = { viewModel.cancelInitUserInput() }
+            )
+        }
+        initialUserInputSteps.AppointmentInfo -> {
+            AppointmentDialog(
+                onConfirm = { viewModel.onAppointmentConfirmed() },
+                onDismiss = { viewModel.cancelInitUserInput() }
+            )
+        }
+        initialUserInputSteps.GAD7 -> {
+            GAD7Dialog(
+                onConfirm = { score: Int ->
+                    viewModel.onGAD7Confirmed(score) },
+                onDismiss = { viewModel.cancelInitUserInput() }
+            )
+        }
+        else -> {
+
+        }
+    }
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -145,6 +188,146 @@ fun WelcomeScreen(
         }
     }
 
+}
+
+@Composable
+fun PhoneNumberDialog(
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var text by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Notfallkontakt") },
+        text = {
+            Column {
+                Text("Bitte gib eine Telefonnummer ein, die im Notfall kontaktiert werden soll.")
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { text = it },
+                    label = { Text("Telefonnummer") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onConfirm(text) },
+                enabled = text.isNotBlank() // Aktiviere den Button nur, wenn Text eingegeben wurde
+            ) {
+                Text("Bestätigen")
+            }
+        },
+        dismissButton = {
+            Button(onClick = onDismiss) {
+                Text("Abbrechen")
+            }
+        }
+    )
+}
+
+val options = listOf("Überhaupt nicht", "An einzelnen Tagen", "An mehr als der Hälfte der Tage", "Beinahe jeden Tag")
+data class Gad7Question(
+    val questionText: String,
+    val options: List<String> = listOf(
+        "Überhaupt nicht", // 0 Punkte
+        "An einzelnen Tagen", // 1 Punkt
+        "An mehr als der Hälfte der Tage", // 2 Punkte
+        "Beinahe jeden Tag" // 3 Punkte
+    )
+)
+private val gad7Questions = listOf(
+    Gad7Question("Wie oft fühlten Sie sich in den letzten 2 Wochen nervös, ängstlich oder angespannt?"),
+    Gad7Question("Wie oft konnten Sie sich nicht davon abhalten, sich Sorgen zu machen oder hörten Ihre Sorgen nicht auf?"),
+    // ... Füge hier die restlichen 5 Fragen hinzu
+)
+@Composable
+fun GAD7Dialog(
+    onDismiss: () -> Unit,
+    onConfirm: (totalScore: Int) -> Unit
+) {
+    var currentQuestionIndex by remember { mutableIntStateOf(0) }
+    // Zustand, um die gegebenen Antworten (als Index 0-3) zu speichern
+    val answers = remember { mutableStateListOf<Int>() }
+
+    // Die aktuell anzuzeigende Frage
+    val currentQuestion = gad7Questions[currentQuestionIndex]
+
+    // Der Zustand für die aktuell ausgewählte Option in der UI
+    var selectedOptionIndex by remember { mutableStateOf<Int?>(null) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("GAD-7 Frage ${currentQuestionIndex + 1}/${gad7Questions.size}")
+        },
+        text = {
+            Column {
+                Text(currentQuestion.questionText)
+                Spacer(Modifier.height(16.dp))
+                // Zeige die Antwortoptionen als RadioButtons an
+                currentQuestion.options.forEachIndexed { index, optionText ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selectedOptionIndex = index },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = (selectedOptionIndex == index),
+                            onClick = { selectedOptionIndex = index }
+                        )
+                        Text(text = optionText, modifier = Modifier.padding(start = 8.dp))
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                // Der "Weiter"-Button
+                onClick = {
+                    selectedOptionIndex?.let { answerIndex ->
+                        // Speichere die gegebene Antwort
+                        answers.add(answerIndex)
+
+                        // Prüfe, ob es die letzte Frage war
+                        if (currentQuestionIndex < gad7Questions.size - 1) {
+                            // Gehe zur nächsten Frage
+                            currentQuestionIndex++
+                            // Setze die Auswahl für die neue Frage zurück
+                            selectedOptionIndex = null
+                        } else {
+                            // TEST IST FERTIG
+                            // Berechne den Gesamt-Score (der Index ist gleichzeitig der Punktwert)
+                            val totalScore = answers.sum()
+                            // Rufe den Callback mit dem Ergebnis auf
+                            onConfirm(totalScore)
+                        }
+                    }
+                },
+                // Aktiviere den Button nur, wenn eine Antwort ausgewählt wurde
+                enabled = selectedOptionIndex != null
+            ) {
+                // Ändere den Text des Buttons auf der letzten Frage
+                val buttonText = if (currentQuestionIndex < gad7Questions.size - 1) "Weiter" else "Fertigstellen"
+                Text(buttonText)
+            }
+        },
+        dismissButton = {
+            Button(onClick = onDismiss) {
+                Text("Abbrechen")
+            }
+        }
+    )
+}
+
+@Composable
+fun AppointmentDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    // TODO
 }
 
 @Preview

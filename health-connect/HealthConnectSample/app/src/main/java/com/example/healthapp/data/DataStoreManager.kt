@@ -25,6 +25,7 @@ class DataStoreManager (private val context: Context){
     val EVENT_CONFIRMATION = booleanPreferencesKey("event_confirmation")
     val ANXIETY_SCORE = intPreferencesKey("anxiety_score")
 
+
     fun readExerciseChoice(): Flow<Int> = context.dataStore.data.map { preferences ->
         preferences[EXERCISE_CHOICE] ?: 0
     }

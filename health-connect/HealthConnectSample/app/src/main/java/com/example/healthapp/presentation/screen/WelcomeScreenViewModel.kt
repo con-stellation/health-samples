@@ -22,11 +22,21 @@ import androidx.lifecycle.viewModelScope
 import com.example.healthapp.data.HealthConnectManager
 import com.example.healthapp.data.HealthDataCenter
 import com.example.healthapp.presentation.screen.exercisesession.ExerciseSessionViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.io.IOException
 import java.util.UUID
 import kotlin.collections.setOf
 
+// nach Permissionsabfrage soll den Nutzern die Input-Möglichkeiten nahegebracht werden
+enum class initialUserInputSteps {
+    Initial,
+    PhoneNumber,
+    AppointmentInfo,
+    GAD7,
+    Done
+}
 class WelcomeScreenViewModel (
     val healthConnectManager: HealthConnectManager,
     val exerciseSessionVM: ExerciseSessionViewModel,
@@ -62,6 +72,57 @@ class WelcomeScreenViewModel (
         private set
 
     val permissionsLauncher = healthConnectManager.requestPermissionsActivityContract()
+    private val initUserInputStepMutable = MutableStateFlow(initialUserInputSteps.Initial)
+    var initUserInputStep = initUserInputStepMutable.asStateFlow()
+
+    private var phoneNumber = mutableStateOf("")
+
+    fun initialUserInput() {
+        if(initUserInputStep.value == initialUserInputSteps.Initial) {
+            initUserInputStepMutable.value = initialUserInputSteps.PhoneNumber
+        }
+    }
+
+    fun onPhoneNumberConfirmed(number: String) {
+        viewModelScope.launch {
+            Log.d("InitialUserInputs", "Telefonnummer erhalten: $number")
+            healthConnectManager.saveEmergencyNumber(number)
+            initUserInputStepMutable.value = initialUserInputSteps.GAD7
+        }
+    }
+
+    fun onGAD7Confirmed(score: Int) {
+        viewModelScope.launch {
+            Log.d("InitialUserInputs", "GAD7 bestätigt")
+            // TODO Ergebnis verarbeiten bzw in Stressscore weiterreichen
+            initUserInputStepMutable.value = initialUserInputSteps.Done
+        }
+    }
+
+    fun onAppointmentConfirmed() {
+        viewModelScope.launch {
+            Log.d("InitialUserInputs", "GAD7 bestätigt")
+            // TODO Ergebnis verarbeiten bzw in Stressscore weiterreichen
+            initUserInputStepMutable.value = initialUserInputSteps.Done
+        }
+    }
+
+    fun cancelInitUserInput() {
+        Log.d("InitialUserInputs", "Abbruch der Inputsequenzen")
+        initUserInputStepMutable.value = initialUserInputSteps.Done
+        // TODO oder lieber...?
+        when(initUserInputStep.value) {
+            initialUserInputSteps.PhoneNumber -> {
+                initUserInputStepMutable.value = initialUserInputSteps.AppointmentInfo
+            }
+            initialUserInputSteps.AppointmentInfo -> {
+                initUserInputStepMutable.value = initialUserInputSteps.GAD7
+            }
+            else -> {
+                initUserInputStepMutable.value = initialUserInputSteps.Done
+            }
+        }
+    }
 
     fun initialLoad() {
         Log.i("WelcomeScreenViewModel", "Called initialload. Now doing read functions.")

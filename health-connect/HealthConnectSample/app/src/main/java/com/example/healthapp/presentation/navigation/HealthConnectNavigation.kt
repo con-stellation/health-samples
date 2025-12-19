@@ -15,6 +15,13 @@
  */
 package com.example.healthapp.presentation.navigation
 
+import android.R
+import android.app.AlertDialog
+import android.content.DialogInterface
+import android.text.method.ScrollingMovementMethod
+import android.view.View
+import android.widget.Scroller
+import android.widget.TextView
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.material.ScaffoldState
 import androidx.compose.runtime.Composable
@@ -41,16 +48,17 @@ import com.example.healthapp.presentation.screen.exercisesessiondetail.ExerciseS
 import com.example.healthapp.presentation.screen.exercisesessiondetail.ExerciseSessionDetailViewModel
 import com.example.healthapp.presentation.screen.exercisesessiondetail.ExerciseSessionDetailViewModelFactory
 import com.example.healthapp.presentation.screen.privacypolicy.PrivacyPolicyScreen
-import com.example.healthapp.presentation.screen.recordlist.RecordType
 import com.example.healthapp.presentation.screen.recordlist.RecordListScreen
 import com.example.healthapp.presentation.screen.recordlist.RecordListScreenViewModel
 import com.example.healthapp.presentation.screen.recordlist.RecordListViewModelFactory
+import com.example.healthapp.presentation.screen.recordlist.RecordType
 import com.example.healthapp.presentation.screen.recordlist.SeriesRecordsType
 import com.example.healthapp.presentation.screen.sleepsession.SleepSessionScreen
 import com.example.healthapp.presentation.screen.sleepsession.SleepSessionViewModel
 import com.example.healthapp.presentation.screen.sleepsession.SleepSessionViewModelFactory
 import com.example.healthapp.showExceptionSnackbar
 import kotlinx.coroutines.launch
+
 
 /**
  * Provides the navigation in the app.
@@ -83,14 +91,17 @@ fun HealthConnectNavigation(
 
             val permissionsGranted by viewModel.permissionsGranted
             val permissions = viewModel.permissions
-            val onPermissionsResult = {viewModel.initialLoad()}
+            val onPermissionsResult = {
+                viewModel.initialLoad()
+                viewModel.initialUserInput()
+            }
             val permissionsLauncher =
                 rememberLauncherForActivityResult(viewModel.permissionsLauncher) {
                     onPermissionsResult()}
             WelcomeScreen(
                 healthConnectAvailability = availability,
                 onPermissionsLaunch = { values ->
-                    permissionsLauncher.launch(values)},
+                    permissionsLauncher.launch(values) },
                 onLoadData = onPermissionsResult,
                 permissionsGranted = permissionsGranted,
                 permissions = permissions,

@@ -793,4 +793,12 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
 //            readExerciseSessions(start.toInstant(), end.toInstant())
 //        }
     }
+
+    suspend fun saveEmergencyNumber(number: String) {
+        dataStoreManager.saveEmergencyNumber(number)
+    }
+
+    suspend fun saveFormular(number: String) {
+        // TODO Formularzustand speichern oder Werte verarbeiten zB Score in die Stressberechnung reinreichen
+    }
 }
