@@ -87,6 +87,14 @@ class WelcomeScreenViewModel (
         viewModelScope.launch {
             Log.d("InitialUserInputs", "Telefonnummer erhalten: $number")
             healthConnectManager.saveEmergencyNumber(number)
+            initUserInputStepMutable.value = initialUserInputSteps.AppointmentInfo
+        }
+    }
+
+    fun onAppointmentConfirmed() {
+        viewModelScope.launch {
+            Log.d("InitialUserInputs", "Terminbestätigung erhalten.")
+            // TODO Ergebnis verarbeiten bzw in Stressscore weiterreichen
             initUserInputStepMutable.value = initialUserInputSteps.GAD7
         }
     }
@@ -99,12 +107,12 @@ class WelcomeScreenViewModel (
         }
     }
 
-    fun onAppointmentConfirmed() {
-        viewModelScope.launch {
-            Log.d("InitialUserInputs", "GAD7 bestätigt")
-            // TODO Ergebnis verarbeiten bzw in Stressscore weiterreichen
-            initUserInputStepMutable.value = initialUserInputSteps.Done
-        }
+    suspend fun readInitUserInputState(): Boolean {
+        return healthConnectManager.readInitUserInputState()
+    }
+
+    suspend fun saveInitUserInputState(state: Boolean) {
+        healthConnectManager.saveInitUserInputState(state)
     }
 
     fun cancelInitUserInput() {

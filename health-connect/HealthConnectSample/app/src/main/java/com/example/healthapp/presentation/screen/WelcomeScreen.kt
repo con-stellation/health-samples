@@ -22,12 +22,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.add
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.AlertDialog
 import androidx.compose.material.Button
@@ -227,7 +225,6 @@ fun PhoneNumberDialog(
     )
 }
 
-val options = listOf("Überhaupt nicht", "An einzelnen Tagen", "An mehr als der Hälfte der Tage", "Beinahe jeden Tag")
 data class Gad7Question(
     val questionText: String,
     val options: List<String> = listOf(
@@ -238,9 +235,14 @@ data class Gad7Question(
     )
 )
 private val gad7Questions = listOf(
-    Gad7Question("Wie oft fühlten Sie sich in den letzten 2 Wochen nervös, ängstlich oder angespannt?"),
-    Gad7Question("Wie oft konnten Sie sich nicht davon abhalten, sich Sorgen zu machen oder hörten Ihre Sorgen nicht auf?"),
-    // ... Füge hier die restlichen 5 Fragen hinzu
+    Gad7Question("Im Folgenden werden Ihnen 7 Fragen aus dem GAD7 Fragebogen für die Einordnung Ihrer Angstsymptomatik gestellt.\nDie Fragen beziehen sich jeweils auf die vergangenen 2 Wochen.\nDie Beantwortung ist freiwillig. Sie können den Fragebogen jederzeit in den Nutzereinstellungen beantworten.\nMöchten Sie fortfahren?"),
+    Gad7Question("Wie oft fühlten Sie sich in den letzten 2 Wochen durch Nervosität, Ängstlichkeit oder Anspannung beeinträchtigt?"),
+    Gad7Question("Wie oft fühlten Sie sich in den letzten 2 Wochen beeinträchtigt, weil Sie Ihre Sorgen nicht anhalten oder kontrollieren konnten?"),
+    Gad7Question("Wie oft fühlten Sie sich in den letzten 2 Wochen durch übermäßige Sorgen bezüglich verschiedener Angelegenheiten beeinträchtigt?"),
+    Gad7Question("Wie oft fühlten Sie sich in den letzten 2 Wochen beeinträchtigt, da Sie Schwierigkeiten hatten, sich zu entspannen?"),
+    Gad7Question("Wie oft fühlten Sie sich in den letzten 2 Wochen durch Rastlosigkeit (so dass das Stillsitzen schwerfällt) beeinträchtigt?"),
+    Gad7Question("Wie oft fühlten Sie sich in den letzten 2 Wochen durch schnelle Veränderung oder Gereiztheit in Ihnen beeinträchtigt?"),
+    Gad7Question("Wie oft fühlten Sie sich in den letzten 2 Wochen beeinträchtigt durch ein Angstgefühl, so als würde etwas Schlimmes passieren?")
 )
 @Composable
 fun GAD7Dialog(
@@ -267,7 +269,85 @@ fun GAD7Dialog(
                 Text(currentQuestion.questionText)
                 Spacer(Modifier.height(16.dp))
                 // Zeige die Antwortoptionen als RadioButtons an
-                currentQuestion.options.forEachIndexed { index, optionText ->
+                if(currentQuestionIndex > 0) {
+                    currentQuestion.options.forEachIndexed { index, optionText ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { selectedOptionIndex = index },
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = (selectedOptionIndex == index),
+                                onClick = { selectedOptionIndex = index }
+                            )
+                            Text(text = optionText, modifier = Modifier.padding(start = 8.dp))
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                // Der "Weiter"-Button
+                onClick = {
+                    if(currentQuestionIndex == 0) {
+                        currentQuestionIndex++
+                        selectedOptionIndex = null
+                    } else {
+                        selectedOptionIndex?.let { answerIndex ->
+                            // Speichere die gegebene Antwort
+                            answers.add(answerIndex)
+
+                            // Prüfe, ob es die letzte Frage war
+                            if (currentQuestionIndex < gad7Questions.size - 1) {
+                                // Gehe zur nächsten Frage
+                                currentQuestionIndex++
+                                // Setze die Auswahl für die neue Frage zurück
+                                selectedOptionIndex = null
+                            } else {
+                                // TEST IST FERTIG
+                                // Berechne den Gesamt-Score (der Index ist gleichzeitig der Punktwert)
+                                val totalScore = answers.sum()
+                                // Rufe den Callback mit dem Ergebnis auf
+                                onConfirm(totalScore)
+                            }
+                        }
+                    }
+
+                },
+                // Aktiviere den Button nur, wenn eine Antwort ausgewählt wurde
+                enabled = (selectedOptionIndex != null) || (currentQuestionIndex == 0)
+            ) {
+                // Ändere den Text des Buttons auf der letzten Frage
+                val buttonText = if (currentQuestionIndex < gad7Questions.size - 1) "Weiter" else "Fertigstellen"
+                Text(buttonText)
+            }
+        },
+        dismissButton = {
+            Button(onClick = onDismiss) {
+                Text("Abbrechen")
+            }
+        }
+    )
+}
+
+@Composable
+fun AppointmentDialog(
+    onConfirm: (totalScore: Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var selectedOptionIndex by remember { mutableStateOf<Int?>(null) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("Haben Sie in den nächsten 7 Tagen ein wichtiges Ereignis oder einen Termin, welcher Sie mental belastet?")
+        },
+        text = {
+            Column {
+                val options = listOf("Nein", "Ja")
+                options.forEachIndexed { index, optionText ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -288,30 +368,11 @@ fun GAD7Dialog(
                 // Der "Weiter"-Button
                 onClick = {
                     selectedOptionIndex?.let { answerIndex ->
-                        // Speichere die gegebene Antwort
-                        answers.add(answerIndex)
-
-                        // Prüfe, ob es die letzte Frage war
-                        if (currentQuestionIndex < gad7Questions.size - 1) {
-                            // Gehe zur nächsten Frage
-                            currentQuestionIndex++
-                            // Setze die Auswahl für die neue Frage zurück
-                            selectedOptionIndex = null
-                        } else {
-                            // TEST IST FERTIG
-                            // Berechne den Gesamt-Score (der Index ist gleichzeitig der Punktwert)
-                            val totalScore = answers.sum()
-                            // Rufe den Callback mit dem Ergebnis auf
-                            onConfirm(totalScore)
-                        }
+                        onConfirm(answerIndex)
                     }
                 },
-                // Aktiviere den Button nur, wenn eine Antwort ausgewählt wurde
-                enabled = selectedOptionIndex != null
             ) {
-                // Ändere den Text des Buttons auf der letzten Frage
-                val buttonText = if (currentQuestionIndex < gad7Questions.size - 1) "Weiter" else "Fertigstellen"
-                Text(buttonText)
+                Text("Weiter")
             }
         },
         dismissButton = {
@@ -320,14 +381,6 @@ fun GAD7Dialog(
             }
         }
     )
-}
-
-@Composable
-fun AppointmentDialog(
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    // TODO
 }
 
 @Preview

@@ -205,6 +205,14 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
         Log.i("HealthConnectManager", "readHRV: ${response.records} avg: $avg current: $currentHrv")
     }
 
+    suspend fun readInitUserInputState(): Boolean {
+        return dataStoreManager.readInitUserInputState().first()
+    }
+
+    suspend fun saveInitUserInputState(state: Boolean) {
+        dataStoreManager.saveInitUserInputState(state)
+    }
+
     /**
      * Writes an [ExerciseSessionRecord] to Health Connect, and additionally writes underlying data for
      * the session too, such as [StepsRecord], [DistanceRecord] etc.

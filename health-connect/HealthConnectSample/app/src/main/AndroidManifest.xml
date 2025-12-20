@@ -51,13 +51,14 @@
             android:theme="@style/Theme.HealthConnect">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.BROWSABLE" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="companionapp" android:host="sms92" />
             </intent-filter>
-
             <!--
                 The app needs to handle this intent and display an appropriate privacy policy
                 explaining how the user's data will be used and handled.

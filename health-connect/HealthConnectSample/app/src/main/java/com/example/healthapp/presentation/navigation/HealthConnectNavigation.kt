@@ -15,13 +15,6 @@
  */
 package com.example.healthapp.presentation.navigation
 
-import android.R
-import android.app.AlertDialog
-import android.content.DialogInterface
-import android.text.method.ScrollingMovementMethod
-import android.view.View
-import android.widget.Scroller
-import android.widget.TextView
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.material.ScaffoldState
 import androidx.compose.runtime.Composable
@@ -69,6 +62,7 @@ fun HealthConnectNavigation(
     healthConnectManager: HealthConnectManager,
     scaffoldState: ScaffoldState
 ) {
+
     val scope = rememberCoroutineScope()
     NavHost(navController = navController, startDestination = Screen.WelcomeScreen.route) {
         val availability by healthConnectManager.availability
@@ -91,9 +85,18 @@ fun HealthConnectNavigation(
 
             val permissionsGranted by viewModel.permissionsGranted
             val permissions = viewModel.permissions
+            var didInit: Boolean
             val onPermissionsResult = {
                 viewModel.initialLoad()
-                viewModel.initialUserInput()
+                scope.launch {
+                    didInit = viewModel.readInitUserInputState()
+                    if (!didInit) {
+                        viewModel.saveInitUserInputState(true)
+
+                        viewModel.initialUserInput()
+                    }
+                }
+                Unit
             }
             val permissionsLauncher =
                 rememberLauncherForActivityResult(viewModel.permissionsLauncher) {

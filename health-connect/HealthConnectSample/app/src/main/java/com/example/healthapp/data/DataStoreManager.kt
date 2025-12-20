@@ -12,6 +12,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlin.also
 
 class DataStoreManager (private val context: Context){
     val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
@@ -24,6 +25,8 @@ class DataStoreManager (private val context: Context){
     val TEAMBUILDING_PREFERENCES = booleanPreferencesKey("teambuilding_preferences")
     val EVENT_CONFIRMATION = booleanPreferencesKey("event_confirmation")
     val ANXIETY_SCORE = intPreferencesKey("anxiety_score")
+    val USERINPUT_STATE = booleanPreferencesKey("userinput_state")
+
 
 
     fun readExerciseChoice(): Flow<Int> = context.dataStore.data.map { preferences ->
@@ -52,7 +55,6 @@ class DataStoreManager (private val context: Context){
 
     fun readTeambuildingPreferences(): Flow<Boolean> = context.dataStore.data.map { preferences ->
         preferences[TEAMBUILDING_PREFERENCES] ?: false
-
     }
 
     fun readEventConfirmation(): Flow<Boolean> = context.dataStore.data.map { preferences ->
@@ -63,6 +65,9 @@ class DataStoreManager (private val context: Context){
         preferences[ANXIETY_SCORE] ?: 21 // schwerste Symptomatik nach GAD7
     }
 
+    fun readInitUserInputState(): Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[USERINPUT_STATE] ?: false
+    }
     suspend fun saveExerciseChoice(choice: Int) {
         context.dataStore.updateData {
             it.toMutablePreferences().also { preferences ->
@@ -127,4 +132,11 @@ class DataStoreManager (private val context: Context){
         }
     }
 
+    suspend fun saveInitUserInputState(data: Boolean) {
+        context.dataStore.updateData {
+            it.toMutablePreferences().also { preferences ->
+                preferences[USERINPUT_STATE] = data
+            }
+        }
+    }
 }
