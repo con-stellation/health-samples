@@ -39,4 +39,7 @@ enum class Screen(val route: String, val titleId: Int, val hasMenuItem: Boolean 
     PrivacyPolicy("privacy_policy", R.string.privacy_policy, false),
     SettingsScreen("settings_screen", R.string.settings),
     RecordListScreen("record_list", R.string.record_list, false),
+    GAD7Formular("gad7_formular", R.string.gad7_formular),
+    PhoneAFriend("phone_a_friend", R.string.phone_a_friend),
+    AppointmentInfo("appointment_info", R.string.appointment_info)
 }

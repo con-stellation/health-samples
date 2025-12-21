@@ -63,6 +63,7 @@ import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 import java.util.ArrayList
 import javax.inject.Inject
+import kotlin.collections.map
 import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.random.Random
@@ -160,7 +161,7 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
      * etc. It does not necessarily mean, however, that the user was *running* for that entire time,
      * more that conceptually, this was the activity being undertaken.
      */
-    suspend fun readExerciseSessions(start: Instant, end: Instant): List<ExerciseSessionRecord> {
+    suspend fun readExerciseSessions(start: Instant, end: Instant): List<ExerciseSession> {
         val request = ReadRecordsRequest(
             recordType = ExerciseSessionRecord::class,
             timeRangeFilter = TimeRangeFilter.between(start, end)
@@ -168,7 +169,19 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
         val response = healthConnectClient.readRecords(request)
 
         Log.i("HealthConnectManager", "readExerciseSessions: ${response.records}")
-        return response.records
+
+        val returnVal = response.records.map { record ->
+            val packageName = record.metadata.dataOrigin.packageName
+            ExerciseSession(
+                startTime = dateTimeWithOffsetOrDefault(record.startTime, record.startZoneOffset),
+                endTime = dateTimeWithOffsetOrDefault(record.startTime, record.startZoneOffset),
+                id = record.metadata.id,
+                sourceAppInfo = healthConnectCompatibleApps[packageName],
+                title = record.title
+            )
+        }
+
+        return returnVal
     }
 
     suspend fun readHRV() {
@@ -597,17 +610,21 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
 
     // Hier wird der Stressindex anhand von Messdaten und ggf. Nutzerangeben berechnet.
     // Je niedriger er ist, desto besser
-    suspend fun calculateStress(
-        exerciseSessionRecord: List<ExerciseSession>,
-        sleep: List<SleepSessionData>
-    ): Int {
+    suspend fun calculateStress(): Int {
         Log.d("calculateStress", "calculateStress called")
-        val sleepIndex = calculateSleepIndex(sleep) // Je höher desto besser
-        val hrvIndex = calculateHrvIndex() // Je höher desto besser
-        val exerciseIndex = calculateExerciseIndex(exerciseSessionRecord) // Je höher desto besser
 
+        val end = ZonedDateTime.now().toInstant()
+        val start = ZonedDateTime.now().minusDays(7).toInstant()
+        // fetch data for calc
+        val exerciseSessionRecord = readExerciseSessions(start, end)
+        val sleep = readSleepSessions()
         val anxietyIndex = dataStoreManager.readAnxietyScore().first()
         val eventConfirmation = if(dataStoreManager.readEventConfirmation().first()) 0 else 100
+        // calculate indices for more complex data and meanings
+        val sleepIndex = calculateSleepIndex(sleep) // Je höher desto besser
+        val hrvIndex = calculateHrvIndex() // Je höher desto besser
+        Log.i("calculateStress", "sleepIndex: $sleepIndex, hrvIndex: $hrvIndex, anxietyIndex: $anxietyIndex, eventConfirmation: $eventConfirmation")
+        val exerciseIndex = calculateExerciseIndex(exerciseSessionRecord) // Je höher desto besser
 
         val stressIndex = 100 - ((sleepIndex + hrvIndex + exerciseIndex + anxietyIndex + eventConfirmation) / 5)
         sendMessageToWatch(stressIndex)
@@ -806,7 +823,15 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
         dataStoreManager.saveEmergencyNumber(number)
     }
 
-    suspend fun saveFormular(number: String) {
-        // TODO Formularzustand speichern oder Werte verarbeiten zB Score in die Stressberechnung reinreichen
+    suspend fun saveAppointmentInfo(choice: Boolean) {
+        dataStoreManager.saveEventConfirmation(choice)
+    }
+
+    fun readEmergencyNumber(): Flow<String> {
+        return dataStoreManager.readEmergencyNumber()
+    }
+
+    suspend fun saveFormular(number: Int) {
+        dataStoreManager.saveAnxietyScore(number)
     }
 }

@@ -91,7 +91,8 @@ fun WelcomeScreen(
     when(initialInputStep) {
         initialUserInputSteps.PhoneNumber -> {
             PhoneNumberDialog(
-                onConfirm = { number -> viewModel.onPhoneNumberConfirmed(number) },
+                onConfirm = { number ->
+                    viewModel.onPhoneNumberConfirmed(number) },
                 onDismiss = { viewModel.cancelInitUserInput() }
             )
         }
@@ -181,11 +182,15 @@ fun WelcomeScreen(
                 .padding(4.dp),
             onClick = {
                 deleteAllGeneratedData()
-            }) {
+            }
+        ) {
             Text(stringResource(id = R.string.delete_data))
         }
     }
+}
 
+fun validateInput(input: String): Boolean {
+    return (input.matches(Regex("[\\d\\s()+-]+")) && input.count { it.isDigit() } >= 5) || input == "#"
 }
 
 @Composable
@@ -194,24 +199,44 @@ fun PhoneNumberDialog(
     onDismiss: () -> Unit
 ) {
     var text by remember { mutableStateOf("") }
+    var isError by remember { mutableStateOf(false) }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Notfallkontakt") },
         text = {
             Column {
-                Text("Bitte gib eine Telefonnummer ein, die im Notfall kontaktiert werden soll.")
+                Text("Optional: Bitte geben Sie eine Telefonnummer ein, die im Notfall kontaktiert werden soll. Die Telefonnummer kann im Appmenü nachträglich angegeben oder verändert werden.")
                 Spacer(modifier = Modifier.height(16.dp))
                 OutlinedTextField(
                     value = text,
-                    onValueChange = { text = it },
+                    onValueChange = {
+                        text = it
+                        isError = false
+                    },
                     label = { Text("Telefonnummer") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    isError = isError
                 )
+                if (isError) {
+                    Text(
+                        text = "Bitte geben Sie eine gültige Telefonnummer ein.",
+                        color = MaterialTheme.colors.error,
+                        style = MaterialTheme.typography.caption,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
             }
         },
         confirmButton = {
             Button(
-                onClick = { onConfirm(text) },
+                onClick = {
+                    if(validateInput(text)) {
+                        onConfirm(text)
+                    } else {
+                        isError = true
+                    }
+                },
                 enabled = text.isNotBlank() // Aktiviere den Button nur, wenn Text eingegeben wurde
             ) {
                 Text("Bestätigen")
@@ -228,14 +253,14 @@ fun PhoneNumberDialog(
 data class Gad7Question(
     val questionText: String,
     val options: List<String> = listOf(
-        "Überhaupt nicht", // 0 Punkte
-        "An einzelnen Tagen", // 1 Punkt
-        "An mehr als der Hälfte der Tage", // 2 Punkte
-        "Beinahe jeden Tag" // 3 Punkte
+        "Beinahe jeden Tag", // 0 Punkte
+        "An mehr als der Hälfte der Tage", // 1 Punkt
+        "An einzelnen Tagen", // 2 Punkte
+        "Überhaupt nicht" // 3 Punkte
     )
 )
 private val gad7Questions = listOf(
-    Gad7Question("Im Folgenden werden Ihnen 7 Fragen aus dem GAD7 Fragebogen für die Einordnung Ihrer Angstsymptomatik gestellt.\nDie Fragen beziehen sich jeweils auf die vergangenen 2 Wochen.\nDie Beantwortung ist freiwillig. Sie können den Fragebogen jederzeit in den Nutzereinstellungen beantworten.\nMöchten Sie fortfahren?"),
+    Gad7Question("Optional: Im Folgenden werden Ihnen 7 Fragen aus dem GAD7 Fragebogen für die Einordnung Ihrer Angstsymptomatik gestellt.\nDie Fragen beziehen sich jeweils auf die vergangenen 2 Wochen.\nSie können den Fragebogen jederzeit in den Nutzereinstellungen beantworten.\nMöchten Sie fortfahren?"),
     Gad7Question("Wie oft fühlten Sie sich in den letzten 2 Wochen durch Nervosität, Ängstlichkeit oder Anspannung beeinträchtigt?"),
     Gad7Question("Wie oft fühlten Sie sich in den letzten 2 Wochen beeinträchtigt, weil Sie Ihre Sorgen nicht anhalten oder kontrollieren konnten?"),
     Gad7Question("Wie oft fühlten Sie sich in den letzten 2 Wochen durch übermäßige Sorgen bezüglich verschiedener Angelegenheiten beeinträchtigt?"),
@@ -314,7 +339,6 @@ fun GAD7Dialog(
                             }
                         }
                     }
-
                 },
                 // Aktiviere den Button nur, wenn eine Antwort ausgewählt wurde
                 enabled = (selectedOptionIndex != null) || (currentQuestionIndex == 0)
@@ -342,7 +366,7 @@ fun AppointmentDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("Haben Sie in den nächsten 7 Tagen ein wichtiges Ereignis oder einen Termin, welcher Sie mental belastet?")
+            Text("Optional: Haben Sie in den nächsten 7 Tagen ein wichtiges Ereignis oder einen Termin, welcher Sie mental belastet?")
         },
         text = {
             Column {

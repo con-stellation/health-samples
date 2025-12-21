@@ -58,7 +58,7 @@ class DataStoreManager (private val context: Context){
     }
 
     fun readEventConfirmation(): Flow<Boolean> = context.dataStore.data.map { preferences ->
-        preferences[EVENT_CONFIRMATION] ?: true
+        preferences[EVENT_CONFIRMATION] ?: false
     }
 
     fun readAnxietyScore(): Flow<Int> = context.dataStore.data.map { preferences ->
@@ -68,6 +68,7 @@ class DataStoreManager (private val context: Context){
     fun readInitUserInputState(): Flow<Boolean> = context.dataStore.data.map { preferences ->
         preferences[USERINPUT_STATE] ?: false
     }
+
     suspend fun saveExerciseChoice(choice: Int) {
         context.dataStore.updateData {
             it.toMutablePreferences().also { preferences ->

@@ -119,16 +119,6 @@ class ExerciseSessionViewModel(private val healthConnectManager: HealthConnectMa
 
         sessionsList.value = healthConnectManager
             .readExerciseSessions(start, end)
-            .map { record ->
-                val packageName = record.metadata.dataOrigin.packageName
-                ExerciseSession(
-                    startTime = dateTimeWithOffsetOrDefault(record.startTime, record.startZoneOffset),
-                    endTime = dateTimeWithOffsetOrDefault(record.startTime, record.startZoneOffset),
-                    id = record.metadata.id,
-                    sourceAppInfo = healthConnectCompatibleApps[packageName],
-                    title = record.title
-                )
-            }
     }
 
     /**

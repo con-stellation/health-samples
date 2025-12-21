@@ -91,6 +91,7 @@ class WelcomeScreenViewModel (
         }
     }
 
+
     fun onAppointmentConfirmed() {
         viewModelScope.launch {
             Log.d("InitialUserInputs", "Terminbestätigung erhalten.")

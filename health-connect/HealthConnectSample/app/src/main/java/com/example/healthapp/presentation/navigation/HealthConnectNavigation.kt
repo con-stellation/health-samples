@@ -18,6 +18,8 @@ package com.example.healthapp.presentation.navigation
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.material.ScaffoldState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -49,6 +51,15 @@ import com.example.healthapp.presentation.screen.recordlist.SeriesRecordsType
 import com.example.healthapp.presentation.screen.sleepsession.SleepSessionScreen
 import com.example.healthapp.presentation.screen.sleepsession.SleepSessionViewModel
 import com.example.healthapp.presentation.screen.sleepsession.SleepSessionViewModelFactory
+import com.example.healthapp.presentation.screen.userinputs.AppointmentInfoScreen
+import com.example.healthapp.presentation.screen.userinputs.AppointmentInfoViewModel
+import com.example.healthapp.presentation.screen.userinputs.AppointmentInfoViewModelFactory
+import com.example.healthapp.presentation.screen.userinputs.GAD7Screen
+import com.example.healthapp.presentation.screen.userinputs.GAD7ViewModel
+import com.example.healthapp.presentation.screen.userinputs.GAD7ViewModelFactory
+import com.example.healthapp.presentation.screen.userinputs.PhoneAFriendScreen
+import com.example.healthapp.presentation.screen.userinputs.PhoneAFriendViewModel
+import com.example.healthapp.presentation.screen.userinputs.PhoneAFriendViewModelFactory
 import com.example.healthapp.showExceptionSnackbar
 import kotlinx.coroutines.launch
 
@@ -305,6 +316,63 @@ fun HealthConnectNavigation(
             ) { values ->
                 permissionsLauncher.launch(values)
             }
+        }
+        composable(Screen.AppointmentInfo.route) {
+            val viewModel: AppointmentInfoViewModel = viewModel(
+                factory = AppointmentInfoViewModelFactory(
+                    healthConnectManager = healthConnectManager
+                )
+            )
+            AppointmentInfoScreen (
+                onAffirmativeClick = {
+                    viewModel.saveAppointmentInfo(true)
+                },
+                onError = { exception ->
+                    showExceptionSnackbar(scaffoldState, scope, exception)
+                },
+                onDenyClick = {
+                    viewModel.saveAppointmentInfo(false)
+                }
+            )
+        }
+        composable(Screen.PhoneAFriend.route) {
+            val viewModel: PhoneAFriendViewModel = viewModel(
+                factory = PhoneAFriendViewModelFactory(
+                    healthConnectManager = healthConnectManager
+                )
+            )
+            val saveState by viewModel.saveState.collectAsState()
+
+            LaunchedEffect(saveState) {
+                if (saveState is PhoneAFriendViewModel.SaveState.Success) {
+                    scope.launch {
+                        scaffoldState.snackbarHostState.showSnackbar(
+                            message = "Telefonnummer erfolgreich gespeichert!"
+                        )
+                    }
+                    // 3. Setze den Zustand im ViewModel zurück, um die Snackbar nicht erneut zu zeigen
+                    viewModel.resetSaveState()
+                }
+            }
+            PhoneAFriendScreen (
+                onConfirm = { number ->
+                    viewModel.savePhoneNumber(number)
+                },
+                viewModel = viewModel
+            )
+        }
+        composable(Screen.GAD7Formular.route) {
+            val viewModel: GAD7ViewModel = viewModel(
+                factory = GAD7ViewModelFactory(
+                    healthConnectManager = healthConnectManager
+                )
+            )
+            GAD7Screen (
+                onConfirm = { score ->
+                    viewModel.saveGAD7Info(score)
+                },
+                onDismiss = { }
+            )
         }
     }
 }
