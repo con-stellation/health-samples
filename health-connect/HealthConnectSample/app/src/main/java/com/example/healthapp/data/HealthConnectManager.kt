@@ -62,7 +62,6 @@ import java.time.Instant
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 import java.util.ArrayList
-import javax.inject.Inject
 import kotlin.collections.map
 import kotlin.math.pow
 import kotlin.math.roundToInt
@@ -92,7 +91,6 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
 
     val permissions = changesDataTypes.map { HealthPermission.getReadPermission(it) }.toSet()
 
-    val permissionsLauncher = requestPermissionsActivityContract()
     val healthConnectCompatibleApps by lazy {
         val intent = Intent("androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE")
 
@@ -182,40 +180,6 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
         }
 
         return returnVal
-    }
-
-    suspend fun readHRV() {
-        // TODO hier Average über die Woche berechnen und mit altem Wert vergleichen?
-        Log.i("HealthConnectManager", "reading HRV")
-        var end = ZonedDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(1)
-        var start = end
-            .minusDays(7) // vielleicht lieber über eine noch längere Zeit?
-
-        var request = ReadRecordsRequest(
-            recordType = HeartRateVariabilityRmssdRecord::class,
-            timeRangeFilter = TimeRangeFilter.between(start.toInstant(), end.toInstant())
-        )
-        val response = healthConnectClient.readRecords(request)
-        val avg = response.records.map { it.heartRateVariabilityMillis }.average()
-
-        //Jetzt noch die aktuelle HRV
-        end = ZonedDateTime.now().truncatedTo(ChronoUnit.DAYS)
-        start = end
-            .minusDays(1)
-        request = ReadRecordsRequest(
-            recordType = HeartRateVariabilityRmssdRecord::class,
-            timeRangeFilter = TimeRangeFilter.between(start.toInstant(), end.toInstant())
-        )
-
-        val currentHrv = healthConnectClient.readRecords(request).records.map { it.heartRateVariabilityMillis }.average()
-        if(!currentHrv.isNaN()) {
-            dataStoreManager.saveCurrentHrv(currentHrv.roundToInt())
-        }
-        if(!avg.isNaN()) {
-            dataStoreManager.saveHrvData(avg.toInt(), response.records.toString())
-        }
-
-        Log.i("HealthConnectManager", "readHRV: ${response.records} avg: $avg current: $currentHrv")
     }
 
     suspend fun readInitUserInputState(): Boolean {
@@ -500,7 +464,7 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
      * terminate when no more changes are available, and the final message will contain the next
      * changes token to use.
      */
-    suspend fun getChanges(token: String): Flow<ChangesMessage> = flow {
+     fun getChanges(token: String): Flow<ChangesMessage> = flow {
         var nextChangesToken = token
         do {
             val response = healthConnectClient.getChanges(nextChangesToken)
@@ -732,12 +696,12 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
         return hrvIndex
     }
 
-    private suspend fun calculateExerciseIndex(exerciseSession: List<ExerciseSession>) : Int {
+    private fun calculateExerciseIndex(exerciseSession: List<ExerciseSession>) : Int {
         val weeklyDuration = exerciseSession.sumOf {
             Duration.between(it.startTime, it.endTime).toMinutes()
         }
 
-        var exerciseIndex = (weeklyDuration / 3*60)*100 // Laut https://adaa.org/living-with-anxiety/managing-anxiety/exercise-stress-and-anxiety ist eine über die Woche verteilte Fitnessroutine besser als einmal 3 Stunden.
+        val exerciseIndex = (weeklyDuration / 3*60)*100 // Laut https://adaa.org/living-with-anxiety/managing-anxiety/exercise-stress-and-anxiety ist eine über die Woche verteilte Fitnessroutine besser als einmal 3 Stunden.
 
         return exerciseIndex.coerceIn(0,100).toInt()
     }
@@ -754,7 +718,6 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
         )
 
         val restingHrData = healthConnectClient.readRecords(request).records.map { it.beatsPerMinute }
-        val restingHR = restingHrData.average()
 
         Log.d("sendMessageToWatch", "restingHR: $restingHrData")
         val listToSend = arrayOf(30, stressIndex).toMutableList()

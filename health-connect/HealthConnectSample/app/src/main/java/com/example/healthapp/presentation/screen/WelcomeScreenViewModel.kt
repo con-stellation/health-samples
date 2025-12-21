@@ -75,8 +75,6 @@ class WelcomeScreenViewModel (
     private val initUserInputStepMutable = MutableStateFlow(initialUserInputSteps.Initial)
     var initUserInputStep = initUserInputStepMutable.asStateFlow()
 
-    private var phoneNumber = mutableStateOf("")
-
     fun initialUserInput() {
         if(initUserInputStep.value == initialUserInputSteps.Initial) {
             initUserInputStepMutable.value = initialUserInputSteps.PhoneNumber
@@ -91,11 +89,10 @@ class WelcomeScreenViewModel (
         }
     }
 
-
     fun onAppointmentConfirmed() {
         viewModelScope.launch {
             Log.d("InitialUserInputs", "Terminbestätigung erhalten.")
-            // TODO Ergebnis verarbeiten bzw in Stressscore weiterreichen
+            healthConnectManager.saveAppointmentInfo(true)
             initUserInputStepMutable.value = initialUserInputSteps.GAD7
         }
     }
@@ -103,7 +100,7 @@ class WelcomeScreenViewModel (
     fun onGAD7Confirmed(score: Int) {
         viewModelScope.launch {
             Log.d("InitialUserInputs", "GAD7 bestätigt")
-            // TODO Ergebnis verarbeiten bzw in Stressscore weiterreichen
+            healthConnectManager.saveFormular(score)
             initUserInputStepMutable.value = initialUserInputSteps.Done
         }
     }
@@ -118,8 +115,6 @@ class WelcomeScreenViewModel (
 
     fun cancelInitUserInput() {
         Log.d("InitialUserInputs", "Abbruch der Inputsequenzen")
-        initUserInputStepMutable.value = initialUserInputSteps.Done
-        // TODO oder lieber...?
         when(initUserInputStep.value) {
             initialUserInputSteps.PhoneNumber -> {
                 initUserInputStepMutable.value = initialUserInputSteps.AppointmentInfo
