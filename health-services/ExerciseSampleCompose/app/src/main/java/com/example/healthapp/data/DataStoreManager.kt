@@ -47,4 +47,9 @@ class DataStoreManager @Inject constructor(@ApplicationContext private val conte
             }
         }
     }
+
+    fun readStressData(): Flow<Int> = context.dataStore.data.map { preferences ->
+        val i = preferences[STRESS_SCORE]
+        i ?: 0
+    }
 }

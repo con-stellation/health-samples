@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -64,6 +65,7 @@ import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.compose.ambient.AmbientAware
 import com.google.android.horologist.compose.ambient.AmbientState
 import com.google.android.horologist.health.composables.ActiveDurationText
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
@@ -84,6 +86,12 @@ fun ExerciseRoute(
     val checkIfStillNeeded = panicViewModel.showInterventionDialog.collectAsState().value
 
     if (showPanicDialog || checkIfStillNeeded) {
+        // hier nötig?
+//        LaunchedEffect(key1 = Unit) {
+//            delay(10000)
+//            panicViewModel.confirmAssistance()
+//        }
+
         PanicDetectedAlert(
             showDialog = (true),
             onPositive = { panicViewModel.confirmAssistance() },

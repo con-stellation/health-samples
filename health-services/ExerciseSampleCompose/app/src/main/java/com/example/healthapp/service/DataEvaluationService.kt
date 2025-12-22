@@ -9,23 +9,21 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.first
 
 @AndroidEntryPoint
-class DataEvaluationService @Inject constructor(private val dataStoreManager: DataStoreManager): LifecycleService(){
+class DataEvaluationService @Inject constructor(private val dataStoreManager: DataStoreManager, private val phoneAFriend: PhoneAFriend): LifecycleService(){
 
     enum class DataIndices() {
         RESTING_HR, STRESS_SCORE
     }
 
-    val phoneAFriend = PhoneAFriend()
-
     suspend fun evaluateData(data: ArrayList<Int?>?) {
         Log.i("DataEvaluationService", "Evaluating data: $data")
+        val oldStressScore = dataStoreManager.readStressData().first()
         dataStoreManager.saveHealthData(data)
-        val stressscore = data?.get(DataIndices.STRESS_SCORE.ordinal) ?:50
-        if(stressscore > 70) {
-            phoneAFriend.sendMessageToContact(false, stressscore)
+        val newStressScore = data?.get(DataIndices.STRESS_SCORE.ordinal) ?:50
+        if((newStressScore > 0) && (newStressScore > oldStressScore)) {
+            phoneAFriend.sendMessageToContact(false, newStressScore)
         }
     }
-
 
     suspend fun evaluateData(data: Int) {
         Log.i("DataEvaluationService", "Received exercise choice: $data")

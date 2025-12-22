@@ -1,5 +1,6 @@
 package com.example.healthapp.presentation.screen
 
+import android.Manifest
 import android.os.RemoteException
 import android.util.Log
 import androidx.compose.runtime.getValue
@@ -62,7 +63,7 @@ class WelcomeScreenViewModel (
         HealthPermission.getWritePermission(TotalCaloriesBurnedRecord::class),
         HealthPermission.getReadPermission(RestingHeartRateRecord::class),
         HealthPermission.getWritePermission(RestingHeartRateRecord::class),
-        PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND
+        PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND,
     )
 
     var permissionsGranted = mutableStateOf(false)

@@ -6,6 +6,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.healthapp.data.ExerciseClientManager
+import com.example.healthapp.service.PhoneAFriend
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +19,7 @@ import kotlinx.coroutines.launch
 class PanicViewModel
 @Inject
 constructor(
-    private val exerciseClientManager: ExerciseClientManager
+    private val exerciseClientManager: ExerciseClientManager, private val phoneAFriend: PhoneAFriend
 ) : ViewModel() {
 
     private val isPanicDetected_Mutable = MutableStateFlow(false)
@@ -50,6 +51,9 @@ constructor(
     fun confirmAssistance() {
         isPanicDetected_Mutable.value = false
         showInterventionDialog_Mutable.value = false
+        viewModelScope.launch {
+            phoneAFriend.sendMessageToContact(true, 0)
+        }
         exerciseClientManager.startBreathingExercise()
     }
 

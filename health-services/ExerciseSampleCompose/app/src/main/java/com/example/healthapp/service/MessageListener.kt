@@ -83,5 +83,4 @@ class MessageListener: WearableListenerService(), DataClient.OnDataChangedListen
             }
         }
     }
-
 }

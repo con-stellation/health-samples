@@ -15,7 +15,9 @@
  */
 package com.example.healthapp.presentation.navigation
 
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.ScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -62,7 +64,7 @@ import com.example.healthapp.presentation.screen.userinputs.PhoneAFriendViewMode
 import com.example.healthapp.presentation.screen.userinputs.PhoneAFriendViewModelFactory
 import com.example.healthapp.showExceptionSnackbar
 import kotlinx.coroutines.launch
-
+import android.Manifest
 
 /**
  * Provides the navigation in the app.
@@ -79,6 +81,20 @@ fun HealthConnectNavigation(
         val availability by healthConnectManager.availability
         composable(Screen.WelcomeScreen.route) {
 
+            val smsPermissionsLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.RequestPermission(),
+                onResult = { isGranted ->
+                    if (isGranted) {
+                        Log.d("SmsPermission", "SEND_SMS permission wurde erteilt.")
+                        // Hier könntest du eine Aktion ausführen, falls die Berechtigung erteilt wurde,
+                        // z.B. eine SMS senden oder einen Zustand im ViewModel aktualisieren.
+                    } else {
+                        Log.d("SmsPermission", "SEND_SMS permission wurde verweigert.")
+                        // Hier solltest du dem Nutzer erklären, warum die Berechtigung benötigt wird
+                        // (z.B. mit einer Snackbar).
+                    }
+                }
+            )
             val exerciseSessionVM: ExerciseSessionViewModel = viewModel(
                 factory = ExerciseSessionViewModelFactory(
                     healthConnectManager = healthConnectManager
@@ -112,10 +128,12 @@ fun HealthConnectNavigation(
             val permissionsLauncher =
                 rememberLauncherForActivityResult(viewModel.permissionsLauncher) {
                     onPermissionsResult()}
+
             WelcomeScreen(
                 healthConnectAvailability = availability,
                 onPermissionsLaunch = { values ->
-                    permissionsLauncher.launch(values) },
+                    permissionsLauncher.launch(values)
+                                      },
                 onLoadData = onPermissionsResult,
                 permissionsGranted = permissionsGranted,
                 permissions = permissions,
@@ -124,6 +142,9 @@ fun HealthConnectNavigation(
                 },
                 deleteAllGeneratedData = {
                     viewModel.deleteAllData()
+                },
+                onRequestSmsPermission = {
+                    smsPermissionsLauncher.launch(Manifest.permission.SEND_SMS)
                 }
             )
 
@@ -234,7 +255,8 @@ fun HealthConnectNavigation(
             val onPermissionsResult = {viewModel.initialLoad()}
             val permissionsLauncher =
                 rememberLauncherForActivityResult(viewModel.permissionsLauncher) {
-                    onPermissionsResult()}
+                    onPermissionsResult()
+            }
             RecordListScreen(
                 uid = uid,
                 permissions = permissions,

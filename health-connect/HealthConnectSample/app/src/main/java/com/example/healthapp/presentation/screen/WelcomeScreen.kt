@@ -64,6 +64,10 @@ import com.example.healthapp.presentation.component.InstalledMessage
 import com.example.healthapp.presentation.component.NotInstalledMessage
 import com.example.healthapp.presentation.component.NotSupportedMessage
 import com.example.healthapp.presentation.theme.HealthConnectTheme
+import kotlinx.coroutines.CoroutineScope
+
+private val CoroutineScope.scope: CoroutineScope
+    get() = this
 
 /**
  * Welcome screen shown when the app is first launched.
@@ -78,7 +82,8 @@ fun WelcomeScreen(
     generateData: () -> Unit,
     deleteAllGeneratedData: () -> Unit = {},
     lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current,
-    viewModel: WelcomeScreenViewModel = viewModel()
+    viewModel: WelcomeScreenViewModel = viewModel(),
+    onRequestSmsPermission: () -> Unit
 ) {
     val initialInputStep by viewModel.initUserInputStep.collectAsState()
     val currentOnLoadData by rememberUpdatedState(onLoadData)
@@ -136,6 +141,7 @@ fun WelcomeScreen(
         if(healthConnectAvailability == SDK_AVAILABLE){
             if (!permissionsGranted) {
                 Log.d("WelcomeScreen", "onPermissionsLaunch")
+                onRequestSmsPermission()
                 onPermissionsLaunch(permissions)
             }
         }
@@ -413,12 +419,15 @@ fun InstalledMessagePreview() {
     HealthConnectTheme {
         WelcomeScreen(
             healthConnectAvailability = SDK_AVAILABLE,
-            onLoadData = {},
             onPermissionsLaunch = {},
             permissionsGranted = false,
             permissions = setOf(),
-            generateData = {}
-        )
+            onLoadData = {},
+            generateData = { },
+            deleteAllGeneratedData = {},
+            lifecycleOwner = TODO(),
+            viewModel = TODO(),
+        ) {}
     }
 }
 
@@ -428,12 +437,15 @@ fun NotInstalledMessagePreview() {
     HealthConnectTheme {
         WelcomeScreen(
             healthConnectAvailability = SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED,
-            onLoadData = {},
             onPermissionsLaunch = {},
             permissionsGranted = false,
             permissions = setOf(),
-            generateData = {}
-        )
+            onLoadData = {},
+            generateData = {},
+            deleteAllGeneratedData = {},
+            lifecycleOwner = TODO(),
+            viewModel = TODO(),
+        ) {}
 
     }
 }
@@ -444,11 +456,14 @@ fun NotSupportedMessagePreview() {
     HealthConnectTheme {
         WelcomeScreen(
             healthConnectAvailability = SDK_UNAVAILABLE,
-            onLoadData = {},
             onPermissionsLaunch = {},
             permissionsGranted = false,
             permissions = setOf(),
-            generateData = {}
-        )
+            onLoadData = {},
+            generateData = {},
+            deleteAllGeneratedData = {},
+            lifecycleOwner = TODO(),
+            viewModel = TODO(),
+        ) {}
     }
 }

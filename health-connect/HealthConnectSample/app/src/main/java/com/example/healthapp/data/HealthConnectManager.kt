@@ -20,6 +20,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Resources.NotFoundException
 import android.os.Build
+import android.telephony.SmsManager
 import android.util.Log
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.compose.runtime.mutableStateOf
@@ -48,12 +49,20 @@ import androidx.health.connect.client.time.TimeRangeFilter
 import androidx.health.connect.client.units.Energy
 import androidx.health.connect.client.units.Length
 import com.example.healthapp.R
+import com.google.android.gms.wearable.DataClient
+import com.google.android.gms.wearable.DataEventBuffer
+import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.Wearable
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.forEach
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.io.IOException
 import java.io.InvalidObjectException
@@ -61,8 +70,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
-import java.util.ArrayList
-import kotlin.collections.map
+import javax.inject.Singleton
 import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.random.Random
@@ -71,10 +79,14 @@ import kotlin.reflect.KClass
 // The minimum android level that can use Health Connect
 const val MIN_SUPPORTED_SDK = Build.VERSION_CODES.O_MR1
 
+@Singleton
 /** Demonstrates reading and writing from Health Connect. */
-class HealthConnectManager(private val context: Context, private val dataStoreManager: DataStoreManager) {
+class HealthConnectManager(private val context: Context, private val dataStoreManager: DataStoreManager): DataClient.OnDataChangedListener {
     private val healthConnectClient by lazy { HealthConnectClient.getOrCreate(context) }
-
+    val PHONE_A_FRIEND = "/phone_a_friend"
+    private val dataClient by lazy { Wearable.getDataClient(context) }
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    var smsManager: SmsManager = SmsManager.getDefault()
     private val changesDataTypes = setOf(
         ExerciseSessionRecord::class,
         StepsRecord::class,
@@ -84,13 +96,17 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
         HeartRateRecord::class,
         SleepSessionRecord::class
     )
-    private val dataClient by lazy {Wearable.getDataClient(context) }
 
     var permissionsGranted = mutableStateOf(false)
         private set
 
     val permissions = changesDataTypes.map { HealthPermission.getReadPermission(it) }.toSet()
 
+    init {
+        // 3. Registriere den Listener, wenn der Manager erstellt wird
+        dataClient.addListener(this)
+        Log.d("HealthConnectManager", "DataChangedListener registriert.")
+    }
     val healthConnectCompatibleApps by lazy {
         val intent = Intent("androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE")
 
@@ -724,7 +740,7 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
 
         try {
             val request = PutDataMapRequest.create("/measured_data").apply {
-                dataMap.putIntegerArrayList("measured_data", listToSend as ArrayList<Int?>)
+                dataMap.putIntegerArrayList("measured_data", listToSend as ArrayList<Int>)
                 dataMap.putLong("timestamp", System.currentTimeMillis())
             }
                 .asPutDataRequest()
@@ -772,14 +788,6 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
         deleteAllSleepData() //klappt zumindest visuell nicht
         deleteAllRestingHrData()
         deleteAllExerciseData()
-//        val end = ZonedDateTime.now().truncatedTo(ChronoUnit.DAYS)
-//        val start = end
-//            .minusDays(30)
-//        val readRecords = readExerciseSessions(start.toInstant(), end.toInstant())
-//        readRecords.forEach { record ->
-//            deleteExerciseSession(record.metadata.id)
-//            readExerciseSessions(start.toInstant(), end.toInstant())
-//        }
     }
 
     suspend fun saveEmergencyNumber(number: String) {
@@ -796,5 +804,30 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
 
     suspend fun saveFormular(number: Int) {
         dataStoreManager.saveAnxietyScore(number)
+    }
+
+    override fun onDataChanged(dataEvents: DataEventBuffer) {
+
+        dataEvents.forEach { dataEvent ->
+            val uri = dataEvent.dataItem.uri
+            when (uri.path) {
+                PHONE_A_FRIEND -> {
+                    val dataMapItem = DataMapItem.fromDataItem(dataEvent.dataItem)
+                    val stressIndex = dataMapItem.dataMap.getIntegerArrayList("stress_index")
+                    val panicDetected = dataMapItem.dataMap.getBoolean("panic_detected")
+                    Log.d("MessageListener", "Data from Watch received. Number: $stressIndex, Panic: $panicDetected")
+
+                    scope.launch {
+                        val contactnumber = dataStoreManager.readEmergencyNumber().first()
+                        Log.i("MessageListener", "Contactnumber: $contactnumber")
+                        if(!contactnumber.isEmpty()) {
+                            var panicDetectedString = if (panicDetected) "eine" else "keine"
+                            val msg = "Sie erhalten diese Nachricht, da Nutzer xy den Mental Health Assistant verwendet. Es liegt ein Stressindex von $stressIndex vor. Es wurde $panicDetectedString Panikübung ausgelöst."
+                            smsManager.sendTextMessage(contactnumber, null, msg, null, null)
+                        }
+                    }
+                }
+            }
+        }
     }
 }

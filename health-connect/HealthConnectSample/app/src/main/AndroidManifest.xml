@@ -16,6 +16,11 @@
   -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.healthapp">
+
+    <uses-feature
+        android:name="android.hardware.telephony"
+        android:required="false" />
+
     <uses-permission android:name="android.permission.health.READ_HEART_RATE"/>
     <uses-permission android:name="android.permission.health.WRITE_HEART_RATE"/>
     <uses-permission android:name="android.permission.health.READ_STEPS"/>
@@ -37,6 +42,7 @@
     <uses-permission android:name="android.permission.health.WRITE_TOTAL_CALORIES_BURNED"/>
     <uses-permission android:name="android.permission.health.WRITE_EXERCISE_ROUTES"/>
     <uses-permission android:name="android.permission.health.READ_EXERCISE_ROUTES"/>
+    <uses-permission android:name="android.permission.SEND_SMS"/>
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -78,7 +84,6 @@
 
         </activity>
     </application>
-
     <queries>
         <package android:name="com.google.android.apps.healthdata" />
 
