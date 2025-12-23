@@ -15,6 +15,7 @@
  */
 package com.example.healthapp.data
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -24,6 +25,7 @@ import android.telephony.SmsManager
 import android.util.Log
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.compose.runtime.mutableStateOf
+import androidx.core.content.ContextCompat
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.HealthConnectClient.Companion.SDK_UNAVAILABLE
 import androidx.health.connect.client.HealthConnectFeatures
@@ -59,6 +61,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.forEach
@@ -87,6 +92,23 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
     private val dataClient by lazy { Wearable.getDataClient(context) }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     var smsManager: SmsManager = SmsManager.getDefault()
+
+    private val _smsPermissionGranted = MutableStateFlow(hasSmsPermission())
+    // 2. Exponiere es als öffentliches, nur lesbares StateFlow
+    val smsPermissionGranted: StateFlow<Boolean> = _smsPermissionGranted.asStateFlow()
+
+    // 3. Eine öffentliche Funktion, um den Status zu prüfen und das Flow zu aktualisieren
+    fun updateSmsPermissionStatus() {
+        _smsPermissionGranted.value = hasSmsPermission()
+    }
+
+    // 4. Eine private Hilfsfunktion, die den tatsächlichen Systemstatus prüft
+    private fun hasSmsPermission(): Boolean {
+        return ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.SEND_SMS
+        ) == PackageManager.PERMISSION_GRANTED
+    }
     private val changesDataTypes = setOf(
         ExerciseSessionRecord::class,
         StepsRecord::class,
@@ -820,7 +842,7 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
                     scope.launch {
                         val contactnumber = dataStoreManager.readEmergencyNumber().first()
                         Log.i("MessageListener", "Contactnumber: $contactnumber")
-                        if(!contactnumber.isEmpty()) {
+                        if(!contactnumber.isEmpty() || contactnumber != "#") {
                             var panicDetectedString = if (panicDetected) "eine" else "keine"
                             val msg = "Sie erhalten diese Nachricht, da Nutzer xy den Mental Health Assistant verwendet. Es liegt ein Stressindex von $stressIndex vor. Es wurde $panicDetectedString Panikübung ausgelöst."
                             smsManager.sendTextMessage(contactnumber, null, msg, null, null)

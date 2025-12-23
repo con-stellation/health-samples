@@ -81,20 +81,6 @@ fun HealthConnectNavigation(
         val availability by healthConnectManager.availability
         composable(Screen.WelcomeScreen.route) {
 
-            val smsPermissionsLauncher = rememberLauncherForActivityResult(
-                contract = ActivityResultContracts.RequestPermission(),
-                onResult = { isGranted ->
-                    if (isGranted) {
-                        Log.d("SmsPermission", "SEND_SMS permission wurde erteilt.")
-                        // Hier könntest du eine Aktion ausführen, falls die Berechtigung erteilt wurde,
-                        // z.B. eine SMS senden oder einen Zustand im ViewModel aktualisieren.
-                    } else {
-                        Log.d("SmsPermission", "SEND_SMS permission wurde verweigert.")
-                        // Hier solltest du dem Nutzer erklären, warum die Berechtigung benötigt wird
-                        // (z.B. mit einer Snackbar).
-                    }
-                }
-            )
             val exerciseSessionVM: ExerciseSessionViewModel = viewModel(
                 factory = ExerciseSessionViewModelFactory(
                     healthConnectManager = healthConnectManager
@@ -110,7 +96,23 @@ fun HealthConnectNavigation(
                 )
             )
 
+            val smsPermissionsLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.RequestPermission(),
+                onResult = { isGranted ->
+                    if (isGranted) {
+                        Log.d("SmsPermission", "SEND_SMS permission wurde erteilt. (Dialog)")
+                        viewModel.onSmsPermissionResult(isGranted)
+                    } else {
+                        Log.d("SmsPermission", "SEND_SMS permission wurde verweigert. (Dialog)")
+                        viewModel.onSmsPermissionResult(isGranted)
+                    // Hier solltest du dem Nutzer erklären, warum die Berechtigung benötigt wird
+                        // (z.B. mit einer Snackbar).
+                    }
+                }
+            )
+
             val permissionsGranted by viewModel.permissionsGranted
+            val smsPermissionsGranted by viewModel.smsPermissionGranted.collectAsState()
             val permissions = viewModel.permissions
             var didInit: Boolean
             val onPermissionsResult = {
@@ -119,7 +121,6 @@ fun HealthConnectNavigation(
                     didInit = viewModel.readInitUserInputState()
                     if (!didInit) {
                         viewModel.saveInitUserInputState(true)
-
                         viewModel.initialUserInput()
                     }
                 }
@@ -145,7 +146,8 @@ fun HealthConnectNavigation(
                 },
                 onRequestSmsPermission = {
                     smsPermissionsLauncher.launch(Manifest.permission.SEND_SMS)
-                }
+                },
+                smsPermissionsGranted = smsPermissionsGranted
             )
 
         }
@@ -364,7 +366,22 @@ fun HealthConnectNavigation(
                 )
             )
             val saveState by viewModel.saveState.collectAsState()
+            val smsPermissionsGranted by viewModel.smsPermissionsGranted.collectAsState()
 
+            val smsPermissionsLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.RequestPermission(),
+                onResult = { isGranted ->
+                    if (isGranted) {
+                        Log.d("SmsPermission", "SEND_SMS permission wurde erteilt. (Screen)")
+                        healthConnectManager.updateSmsPermissionStatus()
+                    } else {
+                        Log.d("SmsPermission", "SEND_SMS permission wurde verweigert. (Screen)")
+                        healthConnectManager.updateSmsPermissionStatus()
+                        // Hier solltest du dem Nutzer erklären, warum die Berechtigung benötigt wird
+                        // (z.B. mit einer Snackbar).
+                    }
+                }
+            )
             LaunchedEffect(saveState) {
                 if (saveState is PhoneAFriendViewModel.SaveState.Success) {
                     scope.launch {
@@ -377,10 +394,14 @@ fun HealthConnectNavigation(
                 }
             }
             PhoneAFriendScreen (
+                smsPermissionsGranted = smsPermissionsGranted,
                 onConfirm = { number ->
                     viewModel.savePhoneNumber(number)
                 },
-                viewModel = viewModel
+                viewModel = viewModel,
+                onRequestSmsPermission = {
+                    smsPermissionsLauncher.launch(Manifest.permission.SEND_SMS)
+                }
             )
         }
         composable(Screen.GAD7Formular.route) {

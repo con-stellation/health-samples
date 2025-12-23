@@ -69,6 +69,8 @@ class WelcomeScreenViewModel (
     var permissionsGranted = mutableStateOf(false)
         private set
 
+    val smsPermissionGranted = healthConnectManager.smsPermissionGranted
+
     var uiState: UiState by mutableStateOf(UiState.Uninitialized)
         private set
 
@@ -82,6 +84,9 @@ class WelcomeScreenViewModel (
         }
     }
 
+    fun onSmsPermissionResult(isGranted: Boolean) {
+        healthConnectManager.updateSmsPermissionStatus()
+    }
     fun onPhoneNumberConfirmed(number: String) {
         viewModelScope.launch {
             Log.d("InitialUserInputs", "Telefonnummer erhalten: $number")

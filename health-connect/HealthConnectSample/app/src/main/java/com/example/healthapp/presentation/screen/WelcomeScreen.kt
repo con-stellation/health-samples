@@ -15,6 +15,7 @@
  */
 package com.example.healthapp.presentation.screen
 
+import android.Manifest
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -83,10 +84,12 @@ fun WelcomeScreen(
     deleteAllGeneratedData: () -> Unit = {},
     lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current,
     viewModel: WelcomeScreenViewModel = viewModel(),
-    onRequestSmsPermission: () -> Unit
+    onRequestSmsPermission: () -> Unit,
+    smsPermissionsGranted: Boolean
 ) {
     val initialInputStep by viewModel.initUserInputStep.collectAsState()
     val currentOnLoadData by rememberUpdatedState(onLoadData)
+
     // Add a listener to re-check whether Health Connect has been installed each time the Welcome
     // screen is resumed: This ensures that if the user has been redirected to the Play store and
     // followed the onboarding flow, then when the app is resumed, instead of showing the message
@@ -97,8 +100,13 @@ fun WelcomeScreen(
         initialUserInputSteps.PhoneNumber -> {
             PhoneNumberDialog(
                 onConfirm = { number ->
-                    viewModel.onPhoneNumberConfirmed(number) },
-                onDismiss = { viewModel.cancelInitUserInput() }
+                    onRequestSmsPermission()
+                    if(smsPermissionsGranted) {
+                        viewModel.onPhoneNumberConfirmed(number)
+                    }
+                },
+                onDismiss = { viewModel.cancelInitUserInput() },
+                permissions = permissions
             )
         }
         initialUserInputSteps.AppointmentInfo -> {
@@ -138,10 +146,14 @@ fun WelcomeScreen(
 
     LaunchedEffect(healthConnectAvailability) {
         Log.d("WelcomeScreen", "LaunchedEffect, permissionsgranted? $permissionsGranted")
-        if(healthConnectAvailability == SDK_AVAILABLE){
+        if(healthConnectAvailability == SDK_AVAILABLE) {
             if (!permissionsGranted) {
-                Log.d("WelcomeScreen", "onPermissionsLaunch")
-                onRequestSmsPermission()
+                // Stelle sicher, dass du den Health-Launcher nur aufrufst, wenn es auch Health-Berechtigungen gibt.
+                if (permissions.isNotEmpty()) {
+                    Log.d("WelcomeScreen", "Fordere Health Connect-Berechtigungen an: $permissions")
+                    onPermissionsLaunch(permissions)
+                }
+
                 onPermissionsLaunch(permissions)
             }
         }
@@ -201,6 +213,7 @@ fun validateInput(input: String): Boolean {
 
 @Composable
 fun PhoneNumberDialog(
+    permissions: Set<String>,
     onConfirm: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -411,59 +424,4 @@ fun AppointmentDialog(
             }
         }
     )
-}
-
-@Preview
-@Composable
-fun InstalledMessagePreview() {
-    HealthConnectTheme {
-        WelcomeScreen(
-            healthConnectAvailability = SDK_AVAILABLE,
-            onPermissionsLaunch = {},
-            permissionsGranted = false,
-            permissions = setOf(),
-            onLoadData = {},
-            generateData = { },
-            deleteAllGeneratedData = {},
-            lifecycleOwner = TODO(),
-            viewModel = TODO(),
-        ) {}
-    }
-}
-
-@Preview
-@Composable
-fun NotInstalledMessagePreview() {
-    HealthConnectTheme {
-        WelcomeScreen(
-            healthConnectAvailability = SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED,
-            onPermissionsLaunch = {},
-            permissionsGranted = false,
-            permissions = setOf(),
-            onLoadData = {},
-            generateData = {},
-            deleteAllGeneratedData = {},
-            lifecycleOwner = TODO(),
-            viewModel = TODO(),
-        ) {}
-
-    }
-}
-
-@Preview
-@Composable
-fun NotSupportedMessagePreview() {
-    HealthConnectTheme {
-        WelcomeScreen(
-            healthConnectAvailability = SDK_UNAVAILABLE,
-            onPermissionsLaunch = {},
-            permissionsGranted = false,
-            permissions = setOf(),
-            onLoadData = {},
-            generateData = {},
-            deleteAllGeneratedData = {},
-            lifecycleOwner = TODO(),
-            viewModel = TODO(),
-        ) {}
-    }
 }

@@ -15,6 +15,7 @@ class PhoneAFriendViewModel (private val healthConnectManager: HealthConnectMana
 
     private val saveStateMutableFlow = MutableStateFlow<SaveState>(SaveState.Idle)
     val saveState = saveStateMutableFlow.asStateFlow()
+    val smsPermissionsGranted = healthConnectManager.smsPermissionGranted
 
     val existingNumber: StateFlow<String> = healthConnectManager.readEmergencyNumber().stateIn(
         scope = viewModelScope,
