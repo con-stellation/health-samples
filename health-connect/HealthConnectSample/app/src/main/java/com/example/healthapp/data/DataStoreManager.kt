@@ -16,7 +16,7 @@ import kotlin.also
 
 class DataStoreManager (private val context: Context){
     val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
-    val EXERCISE_CHOICE = intPreferencesKey("exercise_choice")
+    val EXERCISE_CHOICE = stringPreferencesKey("exercise_choice")
     val HRVAvg = intPreferencesKey("hrv_avg")
     val HRV = stringPreferencesKey("hrv_data")
     val CURRENT_HRV = intPreferencesKey("current_hrv")
@@ -29,8 +29,8 @@ class DataStoreManager (private val context: Context){
 
 
 
-    fun readExerciseChoice(): Flow<Int> = context.dataStore.data.map { preferences ->
-        preferences[EXERCISE_CHOICE] ?: 0
+    fun readExerciseChoice(): Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[EXERCISE_CHOICE] ?: "4-7-8"
     }
 
     fun readHrvAvg(): Flow<Int> = context.dataStore.data.map { preferences ->
@@ -69,7 +69,7 @@ class DataStoreManager (private val context: Context){
         preferences[USERINPUT_STATE] ?: false
     }
 
-    suspend fun saveExerciseChoice(choice: Int) {
+    suspend fun saveExerciseChoice(choice: String) {
         context.dataStore.updateData {
             it.toMutablePreferences().also { preferences ->
                 preferences[EXERCISE_CHOICE] = choice

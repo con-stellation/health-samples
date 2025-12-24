@@ -228,9 +228,9 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
         dataStoreManager.saveInitUserInputState(state)
     }
 
-    suspend fun saveExerciseChoice(choice: Int) {
+    suspend fun saveExerciseChoice(choice: String) {
         dataStoreManager.saveExerciseChoice(choice)
-        sendMessageToWatch()
+        sendExerciseChoiceToWatch(choice)
     }
 
     /**
@@ -783,8 +783,24 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
         }
     }
 
-    private suspend fun sendExerciseChoiceToWatch(choice: Int) {
+    private suspend fun sendExerciseChoiceToWatch(choice: String) {
 
+        try {
+            val request = PutDataMapRequest.create("/exercise_choice").apply {
+                dataMap.putString("choice", choice)
+                dataMap.putLong("timestamp", System.currentTimeMillis())
+            }
+                .asPutDataRequest()
+                .setUrgent()
+
+            val result = dataClient.putDataItem(request).await()
+
+            Log.d("sendMessageToWatch", "Data sent: ${choice}. DataItem saved: $result")
+        } catch (cancellationException: CancellationException) {
+            throw cancellationException
+        } catch (exception: Exception) {
+            Log.d("sendMessageToWatch", "Saving DataItem failed: $exception")
+        }
     }
     //effort to try and send stressmeasurement results to wear os app
 
@@ -852,9 +868,16 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
                         val contactnumber = dataStoreManager.readEmergencyNumber().first()
                         Log.i("MessageListener", "Contactnumber: $contactnumber")
                         if(!contactnumber.isEmpty() || contactnumber != "#") {
-                            var panicDetectedString = if (panicDetected) "eine" else "keine"
-                            val msg = "Sie erhalten diese Nachricht, da Nutzer xy den Mental Health Assistant verwendet. Es liegt ein Stressindex von $stressIndex vor. Es wurde $panicDetectedString Panikübung ausgelöst."
-                            smsManager.sendTextMessage(contactnumber, null, msg, null, null)
+                            val hasPermission = ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.SEND_SMS
+                            ) == PackageManager.PERMISSION_GRANTED
+
+                            if(hasPermission) {
+                                val panicDetectedString = if (panicDetected) "eine" else "keine"
+                                val msg = "Sie erhalten diese Nachricht, da Nutzer xy den Mental Health Assistant verwendet. Es liegt ein Stressindex von $stressIndex vor. Es wurde $panicDetectedString Panikübung ausgelöst."
+                                smsManager.sendTextMessage(contactnumber, null, msg, null, null)
+                            }
                         }
                     }
                 }

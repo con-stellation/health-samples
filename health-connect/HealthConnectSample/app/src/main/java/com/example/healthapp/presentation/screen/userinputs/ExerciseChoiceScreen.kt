@@ -45,7 +45,7 @@ import java.util.UUID
  */
 @Composable
 fun ExerciseChoiceScreen(
-    onChoiceSaved: (Int) -> Unit = {},
+    onChoiceSaved: (String) -> Unit = {},
 ) {
 
     var selectedIndex by remember { mutableStateOf(-1) }
@@ -107,7 +107,7 @@ fun ExerciseChoiceScreen(
 
         Button(
             onClick = {
-                onChoiceSaved(selectedIndex)
+                onChoiceSaved(exerciseChoices[selectedIndex])
             },
             enabled = selectedIndex != -1,
             modifier = Modifier
