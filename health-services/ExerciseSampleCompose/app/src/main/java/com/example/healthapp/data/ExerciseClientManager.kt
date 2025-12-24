@@ -101,6 +101,7 @@ constructor(
     val prePanicTemplate = DtwTemplates.Companion.prePanicSmoothedTemplate()
     val postPanicTemplate = DtwTemplates.Companion.postPanicSmoothedTemplate()
     val restingHrTemplate = DtwTemplates.Companion.restingHrTemplateSmoothedS11()
+    val panicTemplate = DtwTemplates.Companion.panicSmoothedTemplate()
     private val dtwWindow = mutableListOf<Double>()
     private val dtwPrePanicSampleCount = 60 // 15mins of Hr Data with 1 Hz samplingate
     private var heartRateSensor: Sensor?=null
@@ -292,9 +293,9 @@ constructor(
                 }
             }
         }
-
-    var dtwDistance: Double = 0.0
     var calmDtwDistance: Double = Double.MAX_VALUE
+    var dtwDistance: Double = Double.MAX_VALUE
+
 
     private fun runDtwAnalysis() {
         managerScope.launch {
@@ -304,11 +305,10 @@ constructor(
             // DTW kann mit unterschiedlich langen Reihen umgehen, aber für den Vergleich ist gleiche Länge besser.
             val interpolatedLiveValues = interpolate(liveHrValues, prePanicTemplate.size)
 
-            // DTW-Distanz berechnen
-            if(breathingExerciseJob?.isActive == true) {
-                calmDtwDistance = min(DynamicTimeWarping.calculateDistance(postPanicTemplate, interpolatedLiveValues), DynamicTimeWarping.calculateDistance(restingHrTemplate, interpolatedLiveValues))
-            }
-            dtwDistance = DynamicTimeWarping.calculateDistance(prePanicTemplate, interpolatedLiveValues)
+            calmDtwDistance = min(DynamicTimeWarping.calculateDistance(postPanicTemplate, interpolatedLiveValues), DynamicTimeWarping.calculateDistance(restingHrTemplate, interpolatedLiveValues))
+
+            dtwDistance = min(DynamicTimeWarping.calculateDistance(prePanicTemplate, interpolatedLiveValues), DynamicTimeWarping.calculateDistance(panicTemplate, interpolatedLiveValues))
+
 
             Log.d("DTW_Analysis", "DTW Distance: $dtwDistance")
 
@@ -325,7 +325,6 @@ constructor(
                     // bzw... dann würde sowieso die ganze Zeit der Dialog gespammt werden mit denselben Ergebnissen.
                     heartRateCriticalMutableFlow.value = false
                 }
-                calmDtwDistance = Double.MAX_VALUE
             }
         }
     }
