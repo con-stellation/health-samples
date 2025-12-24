@@ -25,7 +25,7 @@ class DataEvaluationService @Inject constructor(private val dataStoreManager: Da
         }
     }
 
-    suspend fun evaluateData(data: Int) {
+    suspend fun evaluateData(data: String) {
         Log.i("DataEvaluationService", "Received exercise choice: $data")
         dataStoreManager.saveExerciseChoice(data)
     }

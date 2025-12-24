@@ -13,6 +13,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.forEach
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
@@ -24,26 +25,21 @@ class RealityCheck @Inject constructor(private val dataStoreManager: DataStoreMa
     var amplitudes: IntArray = intArrayOf(
         160, 0, 50)
 
-
-    enum class ExerciseChoice{
-        fourSevenEight, fourSevenEleven, sixThreeSixThree
-    }
-
-    fun setExercise(choice: Int) {
+    fun setExercise(choice: String) {
         when(choice) {
-            ExerciseChoice.fourSevenEight.ordinal -> {
+            "4-7-8" -> {
                 timings = longArrayOf(
                     4000, 7000, 8000)
                 amplitudes = intArrayOf(
                     160, 0, 50)
             }
-            ExerciseChoice.fourSevenEleven.ordinal -> {
+            "4-7-11" -> {
                 timings = longArrayOf(
                     4000, 7000, 11000)
                 amplitudes = intArrayOf(
                     160, 0, 50)
             }
-            ExerciseChoice.sixThreeSixThree.ordinal -> {
+            "6-3-6-3" -> {
                 timings = longArrayOf(
                     6000, 3000, 6000, 3000)
                 amplitudes = intArrayOf(
@@ -56,13 +52,15 @@ class RealityCheck @Inject constructor(private val dataStoreManager: DataStoreMa
         stopVibrating(vibrator)
         Log.i("RealityCheck", "stopped previous vibration job.")
         vibrationJob = coroutineScope.launch(Dispatchers.Default) {
-            val choice = dataStoreManager.readExerciseChoice()
-            setExercise(choice.first())
+            val choice = dataStoreManager.readExerciseChoice().first()
+            Log.i("RealityCheck", "ExerciseChoice: $choice")
+            setExercise(choice)
             val repeatIndex = -1
 
             try {
                 Log.i("RealityCheck", "Starting vibration")
                 while(isActive) {
+
                     vibrator.vibrate(
                         VibrationEffect.createWaveform(
                             timings, amplitudes, repeatIndex))
@@ -73,7 +71,6 @@ class RealityCheck @Inject constructor(private val dataStoreManager: DataStoreMa
                 Log.i("RealityCheck", "Stopping vibration")
                 stopVibrating(vibrator)
             }
-
         }
 
          return vibrationJob!!

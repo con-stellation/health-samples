@@ -59,7 +59,7 @@ class MessageListener: WearableListenerService(), DataClient.OnDataChangedListen
                 }
                 EXERCISE_PATH -> {
                     val dataMapItem = DataMapItem.fromDataItem(dataEvent.dataItem)
-                    val companionData = dataMapItem.dataMap.getInt("exercise_choice")
+                    val companionData = dataMapItem.dataMap.getString("choice")
                     Log.d("MessageListener ExerciseChoice", "Exercise choice updated: $companionData")
                     scope.launch {
                         try {
@@ -77,7 +77,7 @@ class MessageListener: WearableListenerService(), DataClient.OnDataChangedListen
                         } catch (exception: Exception) {
                             Log.d("MessageListener ExerciseChoice", "Message failed")
                         }
-                        dataEvaluation.evaluateData(companionData)
+                        dataEvaluation.evaluateData(companionData ?: "4-7-8")
                     }
                 }
             }
