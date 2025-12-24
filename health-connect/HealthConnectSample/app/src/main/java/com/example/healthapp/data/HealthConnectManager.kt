@@ -228,6 +228,11 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
         dataStoreManager.saveInitUserInputState(state)
     }
 
+    suspend fun saveExerciseChoice(choice: Int) {
+        dataStoreManager.saveExerciseChoice(choice)
+        sendMessageToWatch()
+    }
+
     /**
      * Writes an [ExerciseSessionRecord] to Health Connect, and additionally writes underlying data for
      * the session too, such as [StepsRecord], [DistanceRecord] etc.
@@ -776,6 +781,10 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
         } catch (exception: Exception) {
             Log.d("sendMessageToWatch", "Saving DataItem failed: $exception")
         }
+    }
+
+    private suspend fun sendExerciseChoiceToWatch(choice: Int) {
+
     }
     //effort to try and send stressmeasurement results to wear os app
 

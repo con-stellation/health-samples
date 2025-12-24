@@ -137,6 +137,7 @@
     <string name="gad7_formular">GAD7 Formular</string>
     <string name="phone_a_friend">Phone A Friend</string>
     <string name="appointment_info">Appointment Info</string>
+    <string name="exercise_choice">Exercise Choice</string>
 
     <!-- Health Connect settings -->
     <string name="settings">Settings</string>

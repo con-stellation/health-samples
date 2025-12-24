@@ -65,6 +65,9 @@ import com.example.healthapp.presentation.screen.userinputs.PhoneAFriendViewMode
 import com.example.healthapp.showExceptionSnackbar
 import kotlinx.coroutines.launch
 import android.Manifest
+import com.example.healthapp.presentation.screen.userinputs.ExerciseChoiceScreen
+import com.example.healthapp.presentation.screen.userinputs.ExerciseChoiceViewModel
+import com.example.healthapp.presentation.screen.userinputs.ExerciseChoiceViewModelFactory
 
 /**
  * Provides the navigation in the app.
@@ -415,6 +418,18 @@ fun HealthConnectNavigation(
                     viewModel.saveGAD7Info(score)
                 },
                 onDismiss = { }
+            )
+        }
+        composable(Screen.ExerciseChoice.route) {
+            val viewModel: ExerciseChoiceViewModel = viewModel(
+                factory = ExerciseChoiceViewModelFactory(
+                    healthConnectManager = healthConnectManager
+                )
+            )
+            ExerciseChoiceScreen (
+                onChoiceSaved = { choice ->
+                    viewModel.saveExerciseChoice(choice)
+                }
             )
         }
     }
