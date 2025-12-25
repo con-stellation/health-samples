@@ -51,9 +51,9 @@ fun ExerciseChoiceScreen(
     var selectedIndex by remember { mutableStateOf(-1) }
     val exerciseChoices = listOf("4-7-8", "4-7-11", "6-3-6-3")
     val explanations = listOf(
-        "4 Sekunden einatmen (starke Vibration), 7 Sekunden halten (keine Vibration), 8 Sekunden ausatmen (dumpfe Vibration).",
-        "4 Sekunden einatmen (starke Vibration), 7 Sekunden halten (keine Vibration), 11 Sekunden ausatmen (dumpfe Vibration).",
-        "6 Sekunden einatmen (starke Vibration), 3 Sekunden halten (keine Vibration), 6 Sekunden ausatmen (dumpfe Vibration), 3 Sekunden halten (keine Vibration)."
+        "4 Sekunden einatmen (starke Vibration), 7 Sekunden halten (keine Vibration), 8 Sekunden ausatmen (schwache Vibration).",
+        "4 Sekunden einatmen (starke Vibration), 7 Sekunden halten (keine Vibration), 11 Sekunden ausatmen (schwache Vibration).",
+        "6 Sekunden einatmen (starke Vibration), 3 Sekunden halten (keine Vibration), 6 Sekunden ausatmen (schwache Vibration), 3 Sekunden halten (keine Vibration)."
     )
 
     Column(

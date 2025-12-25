@@ -29,15 +29,15 @@ class RealityCheck @Inject constructor(private val dataStoreManager: DataStoreMa
         when(choice) {
             "4-7-8" -> {
                 timings = longArrayOf(
-                    4000, 7000, 8000)
+                    4000, 7000, 8000, 500)
                 amplitudes = intArrayOf(
-                    160, 0, 50)
+                    160, 0, 50, 0)
             }
             "4-7-11" -> {
                 timings = longArrayOf(
-                    4000, 7000, 11000)
+                    4000, 7000, 11000, 500)
                 amplitudes = intArrayOf(
-                    160, 0, 50)
+                    160, 0, 50, 0)
             }
             "6-3-6-3" -> {
                 timings = longArrayOf(
@@ -78,6 +78,7 @@ class RealityCheck @Inject constructor(private val dataStoreManager: DataStoreMa
 
     fun stopVibrating(vibrator: Vibrator) {
         if(vibrationJob?.isActive == true) {
+            vibrator.cancel()
             vibrationJob?.cancel()
         }
         vibrationJob = null

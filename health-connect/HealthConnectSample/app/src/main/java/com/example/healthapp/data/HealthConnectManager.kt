@@ -860,20 +860,20 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
             when (uri.path) {
                 PHONE_A_FRIEND -> {
                     val dataMapItem = DataMapItem.fromDataItem(dataEvent.dataItem)
-                    val stressIndex = dataMapItem.dataMap.getIntegerArrayList("stress_index")
+                    val stressIndex = dataMapItem.dataMap.getIntegerArrayList("stress_index")?.get(0)
                     val panicDetected = dataMapItem.dataMap.getBoolean("panic_detected")
                     Log.d("MessageListener", "Data from Watch received. Number: $stressIndex, Panic: $panicDetected")
 
                     scope.launch {
                         val contactnumber = dataStoreManager.readEmergencyNumber().first()
                         Log.i("MessageListener", "Contactnumber: $contactnumber")
-                        if(!contactnumber.isEmpty() || contactnumber != "#") {
+                        if(!contactnumber.isEmpty() && contactnumber != "#") {
                             val hasPermission = ContextCompat.checkSelfPermission(
                                 context,
                                 Manifest.permission.SEND_SMS
                             ) == PackageManager.PERMISSION_GRANTED
 
-                            if(hasPermission) {
+                            if(hasPermission && stressIndex != dataStoreManager.readAnxietyScore().first()) {
                                 val panicDetectedString = if (panicDetected) "eine" else "keine"
                                 val msg = "Sie erhalten diese Nachricht, da Nutzer xy den Mental Health Assistant verwendet. Es liegt ein Stressindex von $stressIndex vor. Es wurde $panicDetectedString Panikübung ausgelöst."
                                 smsManager.sendTextMessage(contactnumber, null, msg, null, null)
