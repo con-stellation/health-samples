@@ -22,6 +22,8 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.os.Handler
+import android.os.HandlerThread
 import android.os.PowerManager
 import androidx.concurrent.futures.await
 import android.os.Vibrator
@@ -112,6 +114,8 @@ constructor(
     private val wakeLock: PowerManager.WakeLock =
         powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "HealthApp::MonitoringWakeLock")
 
+    private val sensorHandlerThread = HandlerThread("SensorThread").apply{ start() }
+    private val sensorHander = Handler(sensorHandlerThread.looper)
     suspend fun getExerciseCapabilities(): ExerciseTypeCapabilities? {
         val capabilities = exerciseClient.getCapabilities()
 
@@ -325,10 +329,10 @@ constructor(
                 )
 
                 //val dtwThreshold = 100000.0 // Hoher Threshold, da in diesem Usecase mehr false positives als false negatives sinnvoll wären
-
+                val decimalFormat = "%.2f"
                 Log.w(
                     "DTW_Analysis",
-                    "PA PATTERNS panic Distance: ${dtwDistance}, calm Distance: $calmDtwDistance"
+                    "PA PATTERNS panic Distance: ${decimalFormat.format(dtwDistance)}, calm Distance: ${decimalFormat.format(calmDtwDistance)}"
                 )
 
                 if (dtwDistance <= calmDtwDistance) {
@@ -374,7 +378,7 @@ constructor(
             return
         }
 
-        sensorManager.registerListener(sensorListener, heartRateSensor, 1_000_000)
+        sensorManager.registerListener(sensorListener, heartRateSensor, 1_000_000, sensorHander)
 
         // hier wird die Companionapp gestartet
         val exec: Executor = Executors.newSingleThreadExecutor()

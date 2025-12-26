@@ -28,7 +28,7 @@ class DataStoreManager @Inject constructor(@ApplicationContext private val conte
 
     fun readExerciseChoice(): Flow<String> = context.dataStore.data.map { preferences ->
         val i = preferences[EXERCISE_CHOICE]
-        i ?: ""
+        i ?: "4-7-8"
     }
 
     suspend fun saveExerciseChoice(choice: String) {

@@ -82,10 +82,9 @@ fun ExerciseRoute(
     val exerciseEnded by viewModel.exerciseEndedFlow.collectAsState()
     var dismissedDialog = false
 
-    val showPanicDialog = panicViewModel.isPanicDetected.collectAsState().value
     val checkIfStillNeeded = panicViewModel.showInterventionDialog.collectAsState().value
 
-    if (showPanicDialog || checkIfStillNeeded) {
+    if (checkIfStillNeeded) {
         // hier nötig?
 //        LaunchedEffect(key1 = Unit) {
 //            delay(10000)

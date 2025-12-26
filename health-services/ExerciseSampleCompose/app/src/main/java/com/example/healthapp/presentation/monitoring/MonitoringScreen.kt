@@ -78,10 +78,9 @@ fun MonitoringRoute(
 
     val panicViewModel: PanicViewModel = hiltViewModel()
 
-    val showPanicDialog = panicViewModel.isPanicDetected.collectAsState().value
     val checkIfStillNeeded = panicViewModel.showInterventionDialog.collectAsState().value
 
-    if (showPanicDialog || checkIfStillNeeded) {
+    if (checkIfStillNeeded) {
         // Wenn Nutzer 10 Sekunden inaktiv ist bei diesem Dialog, so wird die Übung automatisch ausgelöst
         LaunchedEffect(key1 = Unit) {
             delay(10000)
