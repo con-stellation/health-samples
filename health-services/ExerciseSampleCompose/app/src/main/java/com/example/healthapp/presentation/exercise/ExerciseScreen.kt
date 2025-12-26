@@ -233,8 +233,6 @@ private fun ExerciseMetrics(
     ) {
         HeartRateRow(uiState)
 
-        DurationRow(uiState)
-
         StopButton(onEndClick = onEndClick)
     }
 }

@@ -36,7 +36,7 @@ class MessageListener: WearableListenerService(), DataClient.OnDataChangedListen
             when (uri.path) {
                 MEASURED_DATA -> {
                     val dataMapItem = DataMapItem.fromDataItem(dataEvent.dataItem)
-                    val companionData = dataMapItem.dataMap.getIntegerArrayList("measured_data")
+                    val companionData = dataMapItem.dataMap.getInt("measured_data")
                     Log.d("MessageListener MeasuredData", "Health data received: $companionData")
                     scope.launch {
                         try {
@@ -54,7 +54,7 @@ class MessageListener: WearableListenerService(), DataClient.OnDataChangedListen
                         } catch (exception: Exception) {
                             Log.d("MessageListener MeasuredData", "Message failed")
                         }
-                        dataEvaluation.evaluateData(companionData)
+                        dataEvaluation.evaluateStressData(companionData)
                     }
                 }
                 EXERCISE_PATH -> {

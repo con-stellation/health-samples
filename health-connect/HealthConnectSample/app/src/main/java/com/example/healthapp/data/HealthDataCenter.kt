@@ -13,7 +13,8 @@ class HealthDataCenter (private val healthConnectManager: HealthConnectManager){
     suspend fun fetchHealthData(exerciseSessionViewModel: ExerciseSessionViewModel?) {
         exerciseSessionViewModel?.initialLoad()
         Log.d("HealthDataCenter", "doing read for ExerciseSessions now")
-
         healthConnectManager.calculateStress()
+        healthConnectManager.sendMessageToWatch() // sends stressIndex and exerciseChoicce to watch so it has all needed Data from the start
+
     }
 }

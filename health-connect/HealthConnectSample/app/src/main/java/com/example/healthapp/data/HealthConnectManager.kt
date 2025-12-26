@@ -632,9 +632,26 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
         val hrvIndex = calculateHrvIndex() // Je höher desto besser
         Log.i("calculateStress", "sleepIndex: $sleepIndex, hrvIndex: $hrvIndex, anxietyIndex: $anxietyIndex, eventConfirmation: $eventConfirmation")
         val exerciseIndex = calculateExerciseIndex(exerciseSessionRecord) // Je höher desto besser
-
         val stressIndex = 100 - ((sleepIndex + hrvIndex + exerciseIndex + anxietyIndex + eventConfirmation) / 5)
-        sendMessageToWatch(stressIndex)
+        if(stressIndex != dataStoreManager.readStressIndex().first()) {
+            scope.launch {
+                val contactnumber = dataStoreManager.readEmergencyNumber().first()
+                Log.i("MessageListener", "Contactnumber: $contactnumber")
+                if(!contactnumber.isEmpty() && contactnumber != "#") {
+                    val hasPermission = ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.SEND_SMS
+                    ) == PackageManager.PERMISSION_GRANTED
+
+                    if(hasPermission) {
+                        val msg = "Sie erhalten diese Nachricht, da Nutzer xy den Mental Health Assistant verwendet. Es liegt ein Stressindex von $stressIndex vor."
+                        smsManager.sendTextMessage(contactnumber, null, msg, null, null)
+                    }
+                }
+            }
+            dataStoreManager.saveStressIndex(stressIndex)
+            sendMessageToWatch(stressIndex)
+        }
         return stressIndex
     }
 
@@ -749,25 +766,11 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
         return exerciseIndex.coerceIn(0,100).toInt()
     }
 
-    private suspend fun sendMessageToWatch(stressIndex: Int) {
-
-        val end = ZonedDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(1)
-        val start = end
-            .minusDays(7) // resting HR wird nur als Anhaltspunkt für die Thresholds verwendet. Vielleicht weiterer Nutzen für direkte Vergleichswerte mit zB Vortag?
-
-        val request = ReadRecordsRequest(
-            recordType = RestingHeartRateRecord::class,
-            timeRangeFilter = TimeRangeFilter.between(start.toInstant(), end.toInstant())
-        )
-
-        val restingHrData = healthConnectClient.readRecords(request).records.map { it.beatsPerMinute }
-
-        Log.d("sendMessageToWatch", "restingHR: $restingHrData")
-        val listToSend = arrayOf(30, stressIndex).toMutableList()
-
+    suspend fun sendMessageToWatch() {
         try {
+            val stressIndex = dataStoreManager.readStressIndex().first()
             val request = PutDataMapRequest.create("/measured_data").apply {
-                dataMap.putIntegerArrayList("measured_data", listToSend as ArrayList<Int>)
+                dataMap.putInt("measured_data", stressIndex)
                 dataMap.putLong("timestamp", System.currentTimeMillis())
             }
                 .asPutDataRequest()
@@ -775,7 +778,58 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
 
             val result = dataClient.putDataItem(request).await()
 
-            Log.d("sendMessageToWatch", "Data sent: ${listToSend}. DataItem saved: $result")
+            Log.d("sendMessageToWatch", "Data sent: ${stressIndex}. DataItem saved: $result")
+        } catch (cancellationException: CancellationException) {
+            throw cancellationException
+        } catch (exception: Exception) {
+            Log.d("sendMessageToWatch", "Saving DataItem failed: $exception")
+        }
+        try {
+            val exerciseChoice = dataStoreManager.readExerciseChoice().first()
+            val request = PutDataMapRequest.create("/exercise_choice").apply {
+                dataMap.putString("choice", exerciseChoice)
+                dataMap.putLong("timestamp", System.currentTimeMillis())
+            }
+                .asPutDataRequest()
+                .setUrgent()
+
+            val result = dataClient.putDataItem(request).await()
+
+            Log.d("sendMessageToWatch", "Data sent: ${exerciseChoice}. DataItem saved: $result")
+        } catch (cancellationException: CancellationException) {
+            throw cancellationException
+        } catch (exception: Exception) {
+            Log.d("sendMessageToWatch", "Saving DataItem failed: $exception")
+        }
+    }
+
+    private suspend fun sendMessageToWatch(stressIndex: Int) {
+
+//        val end = ZonedDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(1)
+//        val start = end
+//            .minusDays(7) // resting HR wird nur als Anhaltspunkt für die Thresholds verwendet. Vielleicht weiterer Nutzen für direkte Vergleichswerte mit zB Vortag?
+//
+//        val request = ReadRecordsRequest(
+//            recordType = RestingHeartRateRecord::class,
+//            timeRangeFilter = TimeRangeFilter.between(start.toInstant(), end.toInstant())
+//        )
+
+        //val restingHrData = healthConnectClient.readRecords(request).records.map { it.beatsPerMinute }
+
+        //Log.d("sendMessageToWatch", "restingHR: $restingHrData")
+        //val listToSend = arrayOf(30, stressIndex).toMutableList()
+
+        try {
+            val request = PutDataMapRequest.create("/measured_data").apply {
+                dataMap.putInt("measured_data", stressIndex)
+                dataMap.putLong("timestamp", System.currentTimeMillis())
+            }
+                .asPutDataRequest()
+                .setUrgent()
+
+            val result = dataClient.putDataItem(request).await()
+
+            Log.d("sendMessageToWatch", "Data sent: ${stressIndex}. DataItem saved: $result")
         } catch (cancellationException: CancellationException) {
             throw cancellationException
         } catch (exception: Exception) {
@@ -860,9 +914,8 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
             when (uri.path) {
                 PHONE_A_FRIEND -> {
                     val dataMapItem = DataMapItem.fromDataItem(dataEvent.dataItem)
-                    val stressIndex = dataMapItem.dataMap.getIntegerArrayList("stress_index")?.get(0)
                     val panicDetected = dataMapItem.dataMap.getBoolean("panic_detected")
-                    Log.d("MessageListener", "Data from Watch received. Number: $stressIndex, Panic: $panicDetected")
+                    Log.d("MessageListener", "Data from Watch received. Panic: $panicDetected")
 
                     scope.launch {
                         val contactnumber = dataStoreManager.readEmergencyNumber().first()
@@ -873,13 +926,13 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
                                 Manifest.permission.SEND_SMS
                             ) == PackageManager.PERMISSION_GRANTED
 
-                            if(hasPermission && stressIndex != dataStoreManager.readAnxietyScore().first()) {
-                                val panicDetectedString = if (panicDetected) "eine" else "keine"
-                                val msg = "Sie erhalten diese Nachricht, da Nutzer xy den Mental Health Assistant verwendet. Es liegt ein Stressindex von $stressIndex vor. Es wurde $panicDetectedString Panikübung ausgelöst."
+                            if(hasPermission) {
+                                val msg = "Sie erhalten diese Nachricht, da Nutzer xy den Mental Health Assistant verwendet. Es wurde eine Panikübung ausgelöst."
                                 smsManager.sendTextMessage(contactnumber, null, msg, null, null)
                             }
                         }
                     }
+
                 }
             }
         }

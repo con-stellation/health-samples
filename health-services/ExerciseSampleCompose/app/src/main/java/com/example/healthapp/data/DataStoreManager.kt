@@ -39,12 +39,12 @@ class DataStoreManager @Inject constructor(@ApplicationContext private val conte
         }
     }
 
-    suspend fun saveHealthData(data: ArrayList<Int?>?) {
+    suspend fun saveHealthData(data: Int) {
         context.dataStore.updateData {
             it.toMutablePreferences().also { preferences ->
                 //preferences[HRV] = data?.get(DataIndices.HRV.ordinal) ?: 200
-                preferences[RESTING_HR] = data?.get(DataIndices.RESTING_HR.ordinal) ?:60
-                preferences[STRESS_SCORE] = data?.get(DataIndices.STRESS_SCORE.ordinal) ?:50
+                //preferences[RESTING_HR] = data?.get(DataIndices.RESTING_HR.ordinal) ?:60
+                preferences[STRESS_SCORE] = data
             }
         }
     }

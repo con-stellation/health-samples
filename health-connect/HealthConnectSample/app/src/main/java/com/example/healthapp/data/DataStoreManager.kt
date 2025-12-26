@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlin.also
 
-class DataStoreManager (private val context: Context){
+class DataStoreManager (private val context: Context) {
     val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
     val EXERCISE_CHOICE = stringPreferencesKey("exercise_choice")
     val HRVAvg = intPreferencesKey("hrv_avg")
@@ -25,8 +25,8 @@ class DataStoreManager (private val context: Context){
     val TEAMBUILDING_PREFERENCES = booleanPreferencesKey("teambuilding_preferences")
     val EVENT_CONFIRMATION = booleanPreferencesKey("event_confirmation")
     val ANXIETY_SCORE = intPreferencesKey("anxiety_score")
+    val STRESS_INDEX = intPreferencesKey("stress_index")
     val USERINPUT_STATE = booleanPreferencesKey("userinput_state")
-
 
 
     fun readExerciseChoice(): Flow<String> = context.dataStore.data.map { preferences ->
@@ -34,7 +34,8 @@ class DataStoreManager (private val context: Context){
     }
 
     fun readHrvAvg(): Flow<Int> = context.dataStore.data.map { preferences ->
-        preferences[HRVAvg] ?: 47 // Default ist ein durch https://www.kubios.com/blog/heart-rate-variability-normal-range/ berechneter Durchschnittswert einer 24 jährigen Frau
+        preferences[HRVAvg]
+            ?: 47 // Default ist ein durch https://www.kubios.com/blog/heart-rate-variability-normal-range/ berechneter Durchschnittswert einer 24 jährigen Frau
     }
 
     fun readHrvData(): Flow<String> = context.dataStore.data.map { preferences ->
@@ -57,86 +58,99 @@ class DataStoreManager (private val context: Context){
         preferences[TEAMBUILDING_PREFERENCES] ?: false
     }
 
-    fun readEventConfirmation(): Flow<Boolean> = context.dataStore.data.map { preferences ->
-        preferences[EVENT_CONFIRMATION] ?: false
-    }
+        fun readStressIndex(): Flow<Int> = context.dataStore.data.map { preferences ->
+            preferences[STRESS_INDEX] ?: 0
+        }
 
-    fun readAnxietyScore(): Flow<Int> = context.dataStore.data.map { preferences ->
-        preferences[ANXIETY_SCORE] ?: 21 // schwerste Symptomatik nach GAD7
-    }
+        fun readEventConfirmation(): Flow<Boolean> = context.dataStore.data.map { preferences ->
+            preferences[EVENT_CONFIRMATION] ?: false
+        }
 
-    fun readInitUserInputState(): Flow<Boolean> = context.dataStore.data.map { preferences ->
-        preferences[USERINPUT_STATE] ?: false
-    }
+        fun readAnxietyScore(): Flow<Int> = context.dataStore.data.map { preferences ->
+            preferences[ANXIETY_SCORE] ?: 21 // schwerste Symptomatik nach GAD7
+        }
 
-    suspend fun saveExerciseChoice(choice: String) {
-        context.dataStore.updateData {
-            it.toMutablePreferences().also { preferences ->
-                preferences[EXERCISE_CHOICE] = choice
+        fun readInitUserInputState(): Flow<Boolean> = context.dataStore.data.map { preferences ->
+            preferences[USERINPUT_STATE] ?: false
+        }
+
+        suspend fun saveExerciseChoice(choice: String) {
+            context.dataStore.updateData {
+                it.toMutablePreferences().also { preferences ->
+                    preferences[EXERCISE_CHOICE] = choice
+                }
             }
         }
-    }
 
-    suspend fun saveCurrentHrv(hrv: Int) {
-        context.dataStore.updateData {
-            it.toMutablePreferences().also { preferences ->
-                preferences[CURRENT_HRV] = hrv
+        suspend fun saveCurrentHrv(hrv: Int) {
+            context.dataStore.updateData {
+                it.toMutablePreferences().also { preferences ->
+                    preferences[CURRENT_HRV] = hrv
+                }
             }
         }
-    }
-    suspend fun saveHrvData(avg: Int, data: String) {
-        context.dataStore.updateData {
-            it.toMutablePreferences().also { preferences ->
-                preferences[HRV] = data
-                preferences[HRVAvg] = avg
+
+        suspend fun saveHrvData(avg: Int, data: String) {
+            context.dataStore.updateData {
+                it.toMutablePreferences().also { preferences ->
+                    preferences[HRV] = data
+                    preferences[HRVAvg] = avg
+                }
             }
         }
-    }
 
-    suspend fun saveEmergencyNumber(data: String) {
-        context.dataStore.updateData {
-            it.toMutablePreferences().also { preferences ->
-                preferences[EMERGENCY_NUM] = data
+        suspend fun saveEmergencyNumber(data: String) {
+            context.dataStore.updateData {
+                it.toMutablePreferences().also { preferences ->
+                    preferences[EMERGENCY_NUM] = data
+                }
             }
         }
-    }
 
-    suspend fun saveTapPreferences(data: Boolean) {
-        context.dataStore.updateData {
-            it.toMutablePreferences().also { preferences ->
-                preferences[TAP_PREFERENCES] = data
+        suspend fun saveTapPreferences(data: Boolean) {
+            context.dataStore.updateData {
+                it.toMutablePreferences().also { preferences ->
+                    preferences[TAP_PREFERENCES] = data
+                }
             }
         }
-    }
 
-    suspend fun saveTeambuildingPreferences(data: Boolean) {
-        context.dataStore.updateData {
-            it.toMutablePreferences().also { preferences ->
-                preferences[TEAMBUILDING_PREFERENCES] = data
+        suspend fun saveTeambuildingPreferences(data: Boolean) {
+            context.dataStore.updateData {
+                it.toMutablePreferences().also { preferences ->
+                    preferences[TEAMBUILDING_PREFERENCES] = data
+                }
             }
         }
-    }
 
-    suspend fun saveEventConfirmation(data: Boolean) {
-        context.dataStore.updateData {
-            it.toMutablePreferences().also { preferences ->
-                preferences[EVENT_CONFIRMATION] = data
+        suspend fun saveEventConfirmation(data: Boolean) {
+            context.dataStore.updateData {
+                it.toMutablePreferences().also { preferences ->
+                    preferences[EVENT_CONFIRMATION] = data
+                }
             }
         }
-    }
 
-    suspend fun saveAnxietyScore(data: Int) {
-        context.dataStore.updateData {
-            it.toMutablePreferences().also { preferences ->
-                preferences[ANXIETY_SCORE] = data
+        suspend fun saveAnxietyScore(data: Int) {
+            context.dataStore.updateData {
+                it.toMutablePreferences().also { preferences ->
+                    preferences[ANXIETY_SCORE] = data
+                }
             }
         }
-    }
 
-    suspend fun saveInitUserInputState(data: Boolean) {
+        suspend fun saveInitUserInputState(data: Boolean) {
+            context.dataStore.updateData {
+                it.toMutablePreferences().also { preferences ->
+                    preferences[USERINPUT_STATE] = data
+                }
+            }
+        }
+
+    suspend fun saveStressIndex(data: Int) {
         context.dataStore.updateData {
             it.toMutablePreferences().also { preferences ->
-                preferences[USERINPUT_STATE] = data
+                preferences[STRESS_INDEX] = data
             }
         }
     }

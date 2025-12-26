@@ -328,7 +328,7 @@ constructor(
 
                 Log.w(
                     "DTW_Analysis",
-                    "PA PATTERNS panic Distance: $dtwDistance, calm Distance: $calmDtwDistance"
+                    "PA PATTERNS panic Distance: ${dtwDistance}, calm Distance: $calmDtwDistance"
                 )
 
                 if (dtwDistance <= calmDtwDistance) {
