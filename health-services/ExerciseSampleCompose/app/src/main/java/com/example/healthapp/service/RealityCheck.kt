@@ -60,7 +60,6 @@ class RealityCheck @Inject constructor(private val dataStoreManager: DataStoreMa
             try {
                 Log.i("RealityCheck", "Starting vibration")
                 while(isActive) {
-
                     vibrator.vibrate(
                         VibrationEffect.createWaveform(
                             timings, amplitudes, repeatIndex))
