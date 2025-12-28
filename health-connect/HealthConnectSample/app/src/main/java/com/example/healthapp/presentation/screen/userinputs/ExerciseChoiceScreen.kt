@@ -38,15 +38,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.health.connect.client.records.SleepSessionRecord
-import com.example.healthapp.R
-import com.example.healthapp.data.SleepSessionData
-import com.example.healthapp.presentation.component.SleepSessionRow
-import com.example.healthapp.presentation.screen.sleepsession.SleepSessionViewModel
-import com.example.healthapp.presentation.theme.HealthConnectTheme
-import java.time.Duration
-import java.time.ZonedDateTime
-import java.util.UUID
 
 /**
  * Shows a week's worth of sleep data.
@@ -56,7 +47,7 @@ fun ExerciseChoiceScreen(
     onChoiceSaved: (String) -> Unit = {},
 ) {
 
-    var selectedIndex by remember { mutableStateOf(-1) }
+    var selectedIndex by rememberSaveable { mutableStateOf(-1) }
     val exerciseChoices = listOf("4-7-8", "4-7-11", "6-3-6-3")
     val explanations = listOf(
         "4 Sekunden einatmen (starke Vibration), 7 Sekunden halten (keine Vibration), 8 Sekunden ausatmen (schwache Vibration).",

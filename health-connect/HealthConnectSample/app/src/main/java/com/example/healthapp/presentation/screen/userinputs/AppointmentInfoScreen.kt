@@ -16,6 +16,8 @@
 package com.example.healthapp.presentation.screen.userinputs
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -23,6 +25,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Button
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -57,41 +60,43 @@ fun AppointmentInfoScreen(
 
     // Remember the last error ID, such that it is possible to avoid re-launching the error
     // notification for the same error when the screen is recomposed, or configuration changes etc.
-
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        item {
-            Text("Haben Sie in den nächsten 7 Tagen ein wichtiges Ereignis oder einen Termin, welcher Sie mental belastet?")
-        }
-        item {
-            Button(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .padding(4.dp),
-                onClick = {
-                    onAffirmativeClick()
-                }
-            ) {
-                Text(stringResource(id = R.string.affirmative))
+        Spacer(modifier = Modifier.height(30.dp))
+
+        Text("Haben Sie in den nächsten 7 Tagen ein wichtiges Ereignis oder einen Termin, welcher Sie mental belastet?",
+            style = MaterialTheme.typography.body2,
+            modifier = Modifier.padding(bottom = 16.dp))
+
+        Spacer(modifier = Modifier.height(30.dp))
+
+        Button(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+                .padding(4.dp),
+            onClick = {
+                onAffirmativeClick()
             }
+        ) {
+            Text(stringResource(id = R.string.affirmative))
         }
 
-        item {
-            Button(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .padding(4.dp),
-                onClick = {
-                    onDenyClick()
-                }
-            ) {
-                Text(stringResource(id = R.string.deny))
+        Button(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+                .padding(4.dp),
+            onClick = {
+                onDenyClick()
             }
+        ) {
+            Text(stringResource(id = R.string.deny))
         }
     }
 }

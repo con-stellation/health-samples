@@ -4,14 +4,33 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.healthapp.data.HealthConnectManager
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class GAD7ViewModel (private val healthConnectManager: HealthConnectManager): ViewModel(){
+    private val saveStateMutableFlow = MutableStateFlow<SaveState>(SaveState.Idle)
+    val saveState = saveStateMutableFlow.asStateFlow()
     fun saveGAD7Info(score: Int) {
         viewModelScope.launch {
-            healthConnectManager.saveFormular(score)
-            healthConnectManager.calculateStress()
+            try {
+                healthConnectManager.saveFormular(score)
+                saveStateMutableFlow.value = SaveState.Success
+                healthConnectManager.calculateStress()
+            } catch (e: Exception) {
+                saveStateMutableFlow.value = SaveState.Error(e)
+            }
         }
+    }
+
+    fun resetSaveState() {
+        saveStateMutableFlow.value = SaveState.Idle
+    }
+
+    sealed class SaveState {
+        object Idle : SaveState()
+        object Success : SaveState()
+        data class Error(val exception: Throwable) : SaveState()
     }
 }
 

@@ -350,6 +350,19 @@ fun HealthConnectNavigation(
                     healthConnectManager = healthConnectManager
                 )
             )
+            val saveState by viewModel.saveState.collectAsState()
+
+            LaunchedEffect(saveState) {
+                if (saveState is AppointmentInfoViewModel.SaveState.Success) {
+                    scope.launch {
+                        scaffoldState.snackbarHostState.showSnackbar(
+                            message = "Terminangabe erfolgreich gespeichert!"
+                        )
+                    }
+                    // 3. Setze den Zustand im ViewModel zurück, um die Snackbar nicht erneut zu zeigen
+                    viewModel.resetSaveState()
+                }
+            }
             AppointmentInfoScreen (
                 onAffirmativeClick = {
                     viewModel.saveAppointmentInfo(true)
@@ -413,6 +426,19 @@ fun HealthConnectNavigation(
                     healthConnectManager = healthConnectManager
                 )
             )
+            val saveState by viewModel.saveState.collectAsState()
+
+            LaunchedEffect(saveState) {
+                if (saveState is GAD7ViewModel.SaveState.Success) {
+                    scope.launch {
+                        scaffoldState.snackbarHostState.showSnackbar(
+                            message = "Formularzustand erfolgreich gespeichert!"
+                        )
+                    }
+                    // 3. Setze den Zustand im ViewModel zurück, um die Snackbar nicht erneut zu zeigen
+                    viewModel.resetSaveState()
+                }
+            }
             GAD7Screen (
                 onConfirm = { score ->
                     viewModel.saveGAD7Info(score)
@@ -426,6 +452,19 @@ fun HealthConnectNavigation(
                     healthConnectManager = healthConnectManager
                 )
             )
+            val saveState by viewModel.saveState.collectAsState()
+
+            LaunchedEffect(saveState) {
+                if (saveState is ExerciseChoiceViewModel.SaveState.Success) {
+                    scope.launch {
+                        scaffoldState.snackbarHostState.showSnackbar(
+                            message = "Übungsauswahl erfolgreich gespeichert!"
+                        )
+                    }
+                    // 3. Setze den Zustand im ViewModel zurück, um die Snackbar nicht erneut zu zeigen
+                    viewModel.resetSaveState()
+                }
+            }
             ExerciseChoiceScreen (
                 onChoiceSaved = { choice ->
                     viewModel.saveExerciseChoice(choice)

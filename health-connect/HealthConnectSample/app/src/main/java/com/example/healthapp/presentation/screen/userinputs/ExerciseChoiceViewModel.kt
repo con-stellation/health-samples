@@ -4,13 +4,33 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.healthapp.data.HealthConnectManager
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class ExerciseChoiceViewModel(private val healthConnectManager: HealthConnectManager): ViewModel() {
+    private val saveStateMutableFlow = MutableStateFlow<SaveState>(
+        SaveState.Idle)
+    val saveState = saveStateMutableFlow.asStateFlow()
     fun saveExerciseChoice(choice: String) {
         viewModelScope.launch {
-            healthConnectManager.saveExerciseChoice(choice)
+            try {
+                healthConnectManager.saveExerciseChoice(choice)
+                saveStateMutableFlow.value = SaveState.Success
+            } catch (e: Exception) {
+                saveStateMutableFlow.value = SaveState.Error(e)
+            }
         }
+    }
+
+    fun resetSaveState() {
+        saveStateMutableFlow.value = SaveState.Idle
+    }
+
+    sealed class SaveState {
+        object Idle : SaveState()
+        object Success : SaveState()
+        data class Error(val exception: Throwable) : SaveState()
     }
 }
 

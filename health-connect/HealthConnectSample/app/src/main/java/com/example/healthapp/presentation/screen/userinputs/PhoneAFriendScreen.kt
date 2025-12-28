@@ -17,6 +17,7 @@ package com.example.healthapp.presentation.screen.userinputs
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
@@ -60,8 +61,12 @@ fun PhoneAFriendScreen(
         return (input.matches(Regex("[\\d\\s()+-]+")) && input.count { it.isDigit() } >= 5) || input == "#"
     }
 
-    Column {
-        Text("Bitte geben Sie eine Telefonnummer ein, die im Notfall kontaktiert werden soll. Die Telefonnummer kann nachträglich angepasst werden. \n\nFalls Sie keinen Notfallkontakt haben möchten, geben Sie im Eingabefeld bitte # an und klicken Sie auf 'Bestätigen'.")
+    Column (modifier = Modifier
+        .fillMaxSize()
+        .padding(16.dp)){
+        Text("Bitte geben Sie eine Telefonnummer ein, die im Notfall kontaktiert werden soll. Die Telefonnummer kann nachträglich angepasst werden. \n\nFalls Sie keinen Notfallkontakt haben möchten, geben Sie im Eingabefeld bitte # an und klicken Sie auf 'Bestätigen'.",
+            style = MaterialTheme.typography.body2,
+            modifier = Modifier.padding(bottom = 16.dp))
         Spacer(modifier = Modifier.height(16.dp))
         OutlinedTextField(
             value = text,
