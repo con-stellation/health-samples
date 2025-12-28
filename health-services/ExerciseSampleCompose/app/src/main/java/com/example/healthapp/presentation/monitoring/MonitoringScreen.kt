@@ -226,12 +226,10 @@ private fun ExerciseMetrics(
         modifier = modifier
             .fillMaxSize()
             .padding(vertical = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         HeartRateRow(uiState)
-
-        DurationRow(uiState)
 
         StopButton(onEndClick = onEndClick)
     }

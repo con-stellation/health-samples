@@ -15,9 +15,14 @@
  */
 package com.example.healthapp.presentation.summary
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -62,19 +67,11 @@ fun SummaryScreen(
         last = ColumnItemType.Button
     )
     ScreenScaffold(scrollState = columnState, contentPadding = contentPadding) { contentPadding ->
-        TransformingLazyColumn(
-            state = columnState,
-            contentPadding = contentPadding
-        ) {
-
-            item {
-                SummaryFormat(
-                    value = formatHeartRate(uiState.averageHeartRate),
-                    metric = stringResource(id = R.string.avgHR),
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-            item {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
                 Button(
                     label = { Text(stringResource(id = R.string.restart)) },
                     onClick = onRestartClick
