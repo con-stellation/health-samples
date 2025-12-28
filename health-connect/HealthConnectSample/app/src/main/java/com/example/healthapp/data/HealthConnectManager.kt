@@ -878,7 +878,6 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
 
     suspend fun generateAllData(){
         generateHrvData()
-        //generateSleepData()
         insertExerciseSession()
         generateRestingHrData()
     }
@@ -886,7 +885,6 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
     suspend fun deleteAllData() {
         Log.d("HealthConnectManager", "deleteAllData called")
         deleteAllHrvData()
-        deleteAllSleepData() //klappt zumindest visuell nicht
         deleteAllRestingHrData()
         deleteAllExerciseData()
     }

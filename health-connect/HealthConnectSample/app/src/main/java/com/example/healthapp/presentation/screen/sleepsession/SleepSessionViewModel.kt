@@ -65,22 +65,6 @@ class SleepSessionViewModel(private val healthConnectManager: HealthConnectManag
         }
     }
 
-    fun refreshSleepSessions() {
-        viewModelScope.launch {
-            tryWithPermissionsCheck {
-                sessionsList.value = healthConnectManager.readSleepSessions()
-            }
-        }
-    }
-
-    fun generateSleepDataWithoutDelete() {
-        viewModelScope.launch {
-            tryWithPermissionsCheck {
-                healthConnectManager.generateSleepData()
-                sessionsList.value = healthConnectManager.readSleepSessions()
-            }
-        }
-    }
     fun generateSleepData() {
         viewModelScope.launch {
             tryWithPermissionsCheck {

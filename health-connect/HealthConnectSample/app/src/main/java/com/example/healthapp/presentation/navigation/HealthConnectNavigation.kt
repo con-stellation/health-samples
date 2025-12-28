@@ -147,9 +147,8 @@ fun HealthConnectNavigation(
                 permissions = permissions,
                 generateData = {
                     viewModel.generateAllData()
-                    sleepSessionViewModel.generateSleepData() // vllt ist das hier doch besser als die "ohne Löschen" Variante. Wie nutzen sowieso nur die Daten der letzten 24 Stunden
+                    sleepSessionViewModel.generateSleepData()
                     exerciseSessionViewModel.refreshExerciseSessions()
-                    sleepSessionViewModel.refreshSleepSessions()
                 },
                 deleteAllGeneratedData = {
                     viewModel.deleteAllData()
