@@ -147,7 +147,7 @@ fun HealthConnectNavigation(
                 permissions = permissions,
                 generateData = {
                     viewModel.generateAllData()
-                    sleepSessionViewModel.generateSleepDataWithoutDelete()
+                    sleepSessionViewModel.generateSleepData() // vllt ist das hier doch besser als die "ohne Löschen" Variante. Wie nutzen sowieso nur die Daten der letzten 24 Stunden
                     exerciseSessionViewModel.refreshExerciseSessions()
                     sleepSessionViewModel.refreshSleepSessions()
                 },
@@ -308,42 +308,42 @@ fun HealthConnectNavigation(
                     permissionsLauncher.launch(values)}
             )
         }
-        composable(Screen.DifferentialChanges.route) {
-            val viewModel: DifferentialChangesViewModel = viewModel(
-                factory = DifferentialChangesViewModelFactory(
-                    healthConnectManager = healthConnectManager
-                )
-            )
-            val changesToken by viewModel.changesToken
-            val permissionsGranted by viewModel.permissionsGranted
-            val permissions = viewModel.permissions
-            val onPermissionsResult = {viewModel.initialLoad()}
-            val permissionsLauncher =
-                rememberLauncherForActivityResult(viewModel.permissionsLauncher) {
-                onPermissionsResult()}
-            DifferentialChangesScreen(
-                permissionsGranted = permissionsGranted,
-                permissions = permissions,
-                changesEnabled = changesToken != null,
-                onChangesEnable = { enabled ->
-                    viewModel.enableOrDisableChanges(enabled)
-                },
-                changes = viewModel.changes,
-                changesToken = changesToken,
-                onGetChanges = {
-                    viewModel.getChanges()
-                },
-                uiState = viewModel.uiState,
-                onError = { exception ->
-                    showExceptionSnackbar(scaffoldState, scope, exception)
-                },
-                onPermissionsResult = {
-                    viewModel.initialLoad()
-                }
-            ) { values ->
-                permissionsLauncher.launch(values)
-            }
-        }
+//        composable(Screen.DifferentialChanges.route) {
+//            val viewModel: DifferentialChangesViewModel = viewModel(
+//                factory = DifferentialChangesViewModelFactory(
+//                    healthConnectManager = healthConnectManager
+//                )
+//            )
+//            val changesToken by viewModel.changesToken
+//            val permissionsGranted by viewModel.permissionsGranted
+//            val permissions = viewModel.permissions
+//            val onPermissionsResult = {viewModel.initialLoad()}
+//            val permissionsLauncher =
+//                rememberLauncherForActivityResult(viewModel.permissionsLauncher) {
+//                onPermissionsResult()}
+//            DifferentialChangesScreen(
+//                permissionsGranted = permissionsGranted,
+//                permissions = permissions,
+//                changesEnabled = changesToken != null,
+//                onChangesEnable = { enabled ->
+//                    viewModel.enableOrDisableChanges(enabled)
+//                },
+//                changes = viewModel.changes,
+//                changesToken = changesToken,
+//                onGetChanges = {
+//                    viewModel.getChanges()
+//                },
+//                uiState = viewModel.uiState,
+//                onError = { exception ->
+//                    showExceptionSnackbar(scaffoldState, scope, exception)
+//                },
+//                onPermissionsResult = {
+//                    viewModel.initialLoad()
+//                }
+//            ) { values ->
+//                permissionsLauncher.launch(values)
+//            }
+//        }
         composable(Screen.AppointmentInfo.route) {
             val viewModel: AppointmentInfoViewModel = viewModel(
                 factory = AppointmentInfoViewModelFactory(

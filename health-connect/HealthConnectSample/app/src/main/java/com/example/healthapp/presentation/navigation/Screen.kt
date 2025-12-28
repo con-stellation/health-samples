@@ -35,7 +35,7 @@ enum class Screen(val route: String, val titleId: Int, val hasMenuItem: Boolean 
     ExerciseSessionDetail("exercise_session_detail", R.string.exercise_session_detail, false),
     SleepSessions("sleep_sessions", R.string.sleep_sessions),
     SleepSessionDetail("sleep_session_detail", R.string.sleep_session_detail, false),
-    DifferentialChanges("differential_changes", R.string.differential_changes),
+    //DifferentialChanges("differential_changes", R.string.differential_changes),
     PrivacyPolicy("privacy_policy", R.string.privacy_policy, false),
     RecordListScreen("record_list", R.string.record_list, false),
     GAD7Formular("gad7_formular", R.string.gad7_formular),

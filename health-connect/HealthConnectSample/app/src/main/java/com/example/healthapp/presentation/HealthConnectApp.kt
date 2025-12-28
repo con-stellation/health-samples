@@ -92,7 +92,7 @@ fun HealthConnectApp(healthConnectManager: HealthConnectManager) {
                         val titleId = when (currentRoute) {
                             Screen.ExerciseSessions.route -> Screen.ExerciseSessions.titleId
                             Screen.SleepSessions.route -> Screen.SleepSessions.titleId
-                            Screen.DifferentialChanges.route -> Screen.DifferentialChanges.titleId
+                            //Screen.DifferentialChanges.route -> Screen.DifferentialChanges.titleId
                             Screen.GAD7Formular.route -> Screen.GAD7Formular.titleId
                             Screen.ExerciseChoice.route -> Screen.ExerciseChoice.titleId
                             Screen.PhoneAFriend.route -> Screen.PhoneAFriend.titleId
