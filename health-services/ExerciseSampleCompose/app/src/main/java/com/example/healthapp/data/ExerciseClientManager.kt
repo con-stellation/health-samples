@@ -103,7 +103,8 @@ constructor(
     var tenMinutesPassed = tenMinutesPassedMutableFlow.asStateFlow()
     private var tenMinutesTimerJob: Job? = null
     private var i = 0
-    private var hrMonitoringExercisePaused = false
+    private val hrMonitoringExercisePausedMutableFlow = MutableStateFlow(false)
+    var hrMonitoringExercisePaused = hrMonitoringExercisePausedMutableFlow.asStateFlow()
     private val monitoringEndedMutableFlow = MutableStateFlow(false)
     val monitoringEnded = monitoringEndedMutableFlow.asStateFlow()
     val prePanicTemplate = DtwTemplates.Companion.prePanicSmoothedTemplate()
@@ -185,7 +186,7 @@ constructor(
                 exerciseClient.resumeExercise()
             }
         }
-        hrMonitoringExercisePaused = false
+        hrMonitoringExercisePausedMutableFlow.value = false
     }
 
     /**
@@ -309,7 +310,7 @@ constructor(
                     Log.i("ExerciseClientManager", "HR Windowsize: ${dtwWindow.size}")
 
                     // 3. DTW-Analyse starten
-                    if (dtwWindow.size > 280 && !hrMonitoringExercisePaused) { // mit Interpolationsspielraum und nur wenn Monitoring nicht gerade pausiert ist
+                    if (dtwWindow.size > 280 && !hrMonitoringExercisePaused.value) { // mit Interpolationsspielraum und nur wenn Monitoring nicht gerade pausiert ist
                         Log.i(
                             "ExerciseClientManager",
                             "Got at least 4 minutes and 40 secs of Data. Size: ${dtwWindow.size}. Starting DTW analysis"
@@ -430,7 +431,7 @@ constructor(
         tenMinutesTimerJob = null
         //heartRateCriticalMutableFlow.value = false
         tenMinutesPassedMutableFlow.value = false
-        hrMonitoringExercisePaused = true
+        hrMonitoringExercisePausedMutableFlow.value = true
         stopBreathingExercise()
         Log.i("ExerciseClientManager", "Pausiert.")
     }

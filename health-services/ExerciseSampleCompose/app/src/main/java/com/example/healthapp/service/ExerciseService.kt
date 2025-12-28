@@ -94,6 +94,7 @@ class ExerciseService : LifecycleService() {
      */
     suspend fun resumeExercise() {
         exerciseClientManager.resumeExercise()
+
     }
 
     /**

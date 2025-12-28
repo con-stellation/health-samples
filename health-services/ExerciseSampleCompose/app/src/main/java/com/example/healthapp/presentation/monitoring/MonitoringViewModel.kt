@@ -37,6 +37,10 @@ constructor(
 
     private val exerciseEndedMutableFlow = MutableStateFlow(false)
     val exerciseEndedFlow = exerciseEndedMutableFlow.asStateFlow()
+    val hrMonitoringExercisePaused by lazy {
+        healthServicesRepository.exerciseClientManager.hrMonitoringExercisePaused
+    }
+
 
     val uiState: StateFlow<MonitoringScreenState> =
         healthServicesRepository.serviceState

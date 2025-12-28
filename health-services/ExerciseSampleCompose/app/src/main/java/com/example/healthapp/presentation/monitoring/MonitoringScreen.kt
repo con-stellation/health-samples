@@ -96,6 +96,7 @@ fun MonitoringRoute(
     val viewModel = hiltViewModel<MonitoringViewModel>()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val exerciseEnded by viewModel.exerciseEndedFlow.collectAsState()
+    val hrMonitoringExercisePaused by viewModel.hrMonitoringExercisePaused.collectAsState()
 
     if (exerciseEnded) {
         SideEffect {
@@ -118,6 +119,7 @@ fun MonitoringRoute(
                 onResumeClick = { viewModel.resumeMonitoring() },
                 onStartClick = { viewModel.startMonitoring() },
                 uiState = uiState,
+                exercisePaused = hrMonitoringExercisePaused,
                 modifier = modifier
             )
         }
@@ -174,7 +176,8 @@ fun MonitoringScreen(
     onResumeClick: () -> Unit,
     onStartClick: () -> Unit,
     uiState: MonitoringScreenState,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    exercisePaused: Boolean
 ) {
     val coroutineScope = rememberCoroutineScope()
     val pagerState = rememberPagerState(
@@ -201,7 +204,8 @@ fun MonitoringScreen(
                                 coroutineScope.launch {
                                     pagerState.animateScrollToPage(1)
                                 }
-                            }
+                            },
+                            exercisePaused = exercisePaused
                         )
                     } else {
                         ExerciseMetrics(uiState = uiState, onEndClick = onEndClick)
@@ -240,6 +244,7 @@ private fun MonitoringControlButtons(
     onEndClick: () -> Unit,
     onResumeClick: () -> Unit,
     onPauseClick: () -> Unit,
+    exercisePaused: Boolean,
     modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -254,7 +259,7 @@ private fun MonitoringControlButtons(
                 StopButton(onEndClick)
             }
 
-            if (uiState.isPaused) {
+            if (uiState.isPaused || exercisePaused) {
                 ResumeButton(onResumeClick)
             } else {
                 PauseButton(onPauseClick)
@@ -311,6 +316,7 @@ private fun DurationRow(uiState: MonitoringScreenState) {
 fun MonitoringScreenPreview() {
     ThemePreview {
         MonitoringScreen(
+            ambientState = AmbientState.Interactive,
             onPauseClick = {},
             onEndClick = {},
             onResumeClick = {},
@@ -323,7 +329,7 @@ fun MonitoringScreenPreview() {
                 ),
                 exerciseState = ExerciseServiceState()
             ),
-            ambientState = AmbientState.Interactive
+            exercisePaused = false
         )
     }
 }
@@ -363,7 +369,8 @@ fun ExerciseControlButtonsPreview() {
             onStartClick = {},
             onEndClick = {},
             onResumeClick = {},
-            onPauseClick = {}
+            onPauseClick = {},
+            exercisePaused = false
         )
     }
 }
