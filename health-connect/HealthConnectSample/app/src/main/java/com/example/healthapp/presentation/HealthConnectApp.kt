@@ -32,6 +32,7 @@ import androidx.compose.material.SnackbarHost
 import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.automirrored.rounded.Help
 import androidx.compose.material.icons.rounded.Help
 import androidx.compose.material.icons.rounded.Menu
@@ -128,6 +129,19 @@ fun HealthConnectApp(healthConnectManager: HealthConnectManager) {
                                     contentDescription = "Hilfe zur Nutzung der App",
                                     tint = Color.White
                                 )
+                            }
+                        )
+                        IconButton(
+                            onClick = {
+                                startTutorial = true
+                            },
+                            enabled = true,
+                            content = {
+                                IconButton(
+                                    onClick = { },
+                                ) {
+                                    Icon(Icons.AutoMirrored.Filled.VolumeUp, stringResource(R.string.audio_description), tint = Color.White)
+                                }
                             }
                         )
                     }

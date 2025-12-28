@@ -167,7 +167,7 @@ fun WelcomeScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Image(
-            modifier = Modifier.fillMaxWidth(0.5f),
+            modifier = Modifier.fillMaxWidth(0.3f),
             painter = painterResource(id = R.drawable.ic_health_connect_logo),
             contentDescription = stringResource(id = R.string.health_connect_logo)
         )
@@ -182,7 +182,7 @@ fun WelcomeScreen(
             SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED -> NotInstalledMessage()
             SDK_UNAVAILABLE -> NotSupportedMessage()
         }
-        Spacer(modifier = Modifier.height(200.dp))
+        Spacer(modifier = Modifier.height(20.dp))
         Button(
             modifier = Modifier
                 .fillMaxWidth()

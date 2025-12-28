@@ -112,6 +112,13 @@ class ExerciseSessionViewModel(private val healthConnectManager: HealthConnectMa
         }
     }
 
+    fun refreshExerciseSessions() {
+        viewModelScope.launch {
+            tryWithPermissionsCheck {
+                readExerciseSessions()
+            }
+        }
+    }
     private suspend fun readExerciseSessions() {
         Log.i("ExerciseSessionViewModel", "Reading exercise sessions.")
         val end = ZonedDateTime.now().toInstant()

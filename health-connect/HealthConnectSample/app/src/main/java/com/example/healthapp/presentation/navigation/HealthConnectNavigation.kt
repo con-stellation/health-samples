@@ -79,22 +79,26 @@ fun HealthConnectNavigation(
     scaffoldState: ScaffoldState
 ) {
 
+    val exerciseSessionViewModel: ExerciseSessionViewModel = viewModel(
+        factory = ExerciseSessionViewModelFactory(
+            healthConnectManager = healthConnectManager
+        )
+    )
+    val sleepSessionViewModel: SleepSessionViewModel = viewModel(
+        factory = SleepSessionViewModelFactory(
+            healthConnectManager = healthConnectManager
+        )
+    )
     val scope = rememberCoroutineScope()
     NavHost(navController = navController, startDestination = Screen.WelcomeScreen.route) {
         val availability by healthConnectManager.availability
         composable(Screen.WelcomeScreen.route) {
 
-            val exerciseSessionVM: ExerciseSessionViewModel = viewModel(
-                factory = ExerciseSessionViewModelFactory(
-                    healthConnectManager = healthConnectManager
-                )
-            )
-
             val healthDataCenter = HealthDataCenter(healthConnectManager)
             val viewModel: WelcomeScreenViewModel = viewModel(
                 factory = WelcomeScreenViewModelFactory(
                     healthConnectManager = healthConnectManager,
-                    exerciseSessionVM = exerciseSessionVM,
+                    exerciseSessionVM = exerciseSessionViewModel,
                     healthDataCenter =  healthDataCenter
                 )
             )
@@ -143,9 +147,14 @@ fun HealthConnectNavigation(
                 permissions = permissions,
                 generateData = {
                     viewModel.generateAllData()
+                    sleepSessionViewModel.generateSleepDataWithoutDelete()
+                    exerciseSessionViewModel.refreshExerciseSessions()
+                    sleepSessionViewModel.refreshSleepSessions()
                 },
                 deleteAllGeneratedData = {
                     viewModel.deleteAllData()
+                    exerciseSessionViewModel.refreshExerciseSessions()
+                    sleepSessionViewModel.deleteSleepSession()
                 },
                 onRequestSmsPermission = {
                     smsPermissionsLauncher.launch(Manifest.permission.SEND_SMS)
@@ -168,19 +177,15 @@ fun HealthConnectNavigation(
             SettingsScreen { scope.launch { healthConnectManager.revokeAllPermissions() } }
         }
         composable(Screen.ExerciseSessions.route) {
-            val viewModel: ExerciseSessionViewModel = viewModel(
-                factory = ExerciseSessionViewModelFactory(
-                    healthConnectManager = healthConnectManager
-                )
-            )
-            val permissionsGranted by viewModel.permissionsGranted
-            val sessionsList by viewModel.sessionsList
-            val permissions = viewModel.permissions
-            val backgroundReadAvailable by viewModel.backgroundReadAvailable
-            val backgroundReadGranted by viewModel.backgroundReadGranted
-            val onPermissionsResult = {viewModel.initialLoad()}
+
+            val permissionsGranted by exerciseSessionViewModel.permissionsGranted
+            val sessionsList by exerciseSessionViewModel.sessionsList
+            val permissions = exerciseSessionViewModel.permissions
+            val backgroundReadAvailable by exerciseSessionViewModel.backgroundReadAvailable
+            val backgroundReadGranted by exerciseSessionViewModel.backgroundReadGranted
+            val onPermissionsResult = {exerciseSessionViewModel.initialLoad()}
             val permissionsLauncher =
-                rememberLauncherForActivityResult(viewModel.permissionsLauncher) {
+                rememberLauncherForActivityResult(exerciseSessionViewModel.permissionsLauncher) {
                 onPermissionsResult()}
             ExerciseSessionScreen(
                 permissionsGranted = permissionsGranted,
@@ -188,22 +193,22 @@ fun HealthConnectNavigation(
                 backgroundReadAvailable = backgroundReadAvailable,
                 backgroundReadGranted = backgroundReadGranted,
                 sessionsList = sessionsList,
-                uiState = viewModel.uiState,
+                uiState = exerciseSessionViewModel.uiState,
                 onInsertClick = {
-                    viewModel.insertExerciseSession()
+                    exerciseSessionViewModel.insertExerciseSession()
                 },
                 onDetailsClick = { uid ->
                     navController.navigate(Screen.ExerciseSessionDetail.route + "/" + uid)
                 },
                 onDeleteClick = { uid ->
-                    viewModel.deleteExerciseSession(uid)
+                    exerciseSessionViewModel.deleteExerciseSession(uid)
                 },
                 onLoadData = onPermissionsResult,
                 onError = { exception ->
                     showExceptionSnackbar(scaffoldState, scope, exception)
                 },
                 onPermissionsResult = {
-                    viewModel.initialLoad()
+                    exerciseSessionViewModel.initialLoad()
                 },
                 onPermissionsLaunch = { values ->
                     permissionsLauncher.launch(values)}
@@ -211,24 +216,24 @@ fun HealthConnectNavigation(
         }
         composable(Screen.ExerciseSessionDetail.route + "/{$UID_NAV_ARGUMENT}") {
             val uid = it.arguments?.getString(UID_NAV_ARGUMENT)!!
-            val viewModel: ExerciseSessionDetailViewModel = viewModel(
+            val exerciseSessionDetailviewModel: ExerciseSessionDetailViewModel = viewModel(
                 factory = ExerciseSessionDetailViewModelFactory(
                     uid = uid,
                     healthConnectManager = healthConnectManager
                 )
             )
-            val permissionsGranted by viewModel.permissionsGranted
-            val sessionMetrics by viewModel.sessionMetrics
-            val permissions = viewModel.permissions
-            val onPermissionsResult = {viewModel.initialLoad()}
+            val permissionsGranted by exerciseSessionDetailviewModel.permissionsGranted
+            val sessionMetrics by exerciseSessionDetailviewModel.sessionMetrics
+            val permissions = exerciseSessionDetailviewModel.permissions
+            val onPermissionsResult = {exerciseSessionDetailviewModel.initialLoad()}
             val permissionsLauncher =
-                rememberLauncherForActivityResult(viewModel.permissionsLauncher) {
+                rememberLauncherForActivityResult(exerciseSessionDetailviewModel.permissionsLauncher) {
                 onPermissionsResult()}
             ExerciseSessionDetailScreen(
                 permissions = permissions,
                 permissionsGranted = permissionsGranted,
                 sessionMetrics = sessionMetrics,
-                uiState = viewModel.uiState,
+                uiState = exerciseSessionDetailviewModel.uiState,
                 onDetailsClick = { recordType, recordId, seriesRecordsType ->
                     navController.navigate(Screen.RecordListScreen.route + "/" + recordType + "/"+ recordId + "/" + seriesRecordsType)
                 },
@@ -236,7 +241,7 @@ fun HealthConnectNavigation(
                     showExceptionSnackbar(scaffoldState, scope, exception)
                 },
                 onPermissionsResult = {
-                    viewModel.initialLoad()
+                    exerciseSessionDetailviewModel.initialLoad()
                 },
                 onPermissionsLaunch = { values ->
                     permissionsLauncher.launch(values)}
@@ -278,31 +283,26 @@ fun HealthConnectNavigation(
             )
         }
         composable(Screen.SleepSessions.route) {
-            val viewModel: SleepSessionViewModel = viewModel(
-                factory = SleepSessionViewModelFactory(
-                    healthConnectManager = healthConnectManager
-                )
-            )
-            val permissionsGranted by viewModel.permissionsGranted
-            val sessionsList by viewModel.sessionsList
-            val permissions = viewModel.permissions
-            val onPermissionsResult = {viewModel.initialLoad()}
+            val permissionsGranted by sleepSessionViewModel.permissionsGranted
+            val sessionsList by sleepSessionViewModel.sessionsList
+            val permissions = sleepSessionViewModel.permissions
+            val onPermissionsResult = {sleepSessionViewModel.initialLoad()}
             val permissionsLauncher =
-                rememberLauncherForActivityResult(viewModel.permissionsLauncher) {
+                rememberLauncherForActivityResult(sleepSessionViewModel.permissionsLauncher) {
                 onPermissionsResult()}
             SleepSessionScreen(
                 permissionsGranted = permissionsGranted,
                 permissions = permissions,
                 sessionsList = sessionsList,
-                uiState = viewModel.uiState,
+                uiState = sleepSessionViewModel.uiState,
                 onInsertClick = {
-                    viewModel.generateSleepData()
+                    sleepSessionViewModel.generateSleepData()
                 },
                 onError = { exception ->
                     showExceptionSnackbar(scaffoldState, scope, exception)
                 },
                 onPermissionsResult = {
-                    viewModel.initialLoad()
+                    sleepSessionViewModel.initialLoad()
                 },
                 onPermissionsLaunch = { values ->
                     permissionsLauncher.launch(values)}

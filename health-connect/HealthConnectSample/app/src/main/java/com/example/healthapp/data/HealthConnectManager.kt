@@ -878,7 +878,7 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
 
     suspend fun generateAllData(){
         generateHrvData()
-        generateSleepData()
+        //generateSleepData()
         insertExerciseSession()
         generateRestingHrData()
     }
