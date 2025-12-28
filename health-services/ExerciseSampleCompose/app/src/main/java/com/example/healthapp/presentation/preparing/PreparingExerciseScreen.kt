@@ -154,7 +154,7 @@ fun PreparingExerciseScreen(
             item {
                 Text(
                     textAlign = TextAlign.Center,
-                    maxLines = 2,
+                    maxLines = 4,
                     overflow = TextOverflow.Ellipsis,
                     text = stringResource(id = R.string.preparing_exercise),
                     modifier = Modifier

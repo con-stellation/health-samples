@@ -17,7 +17,7 @@
     <string name="app_name">Exercise Sample</string>
 
     <!-- Screens -->
-    <string name="preparing_exercise">Preparing\nsensors</string>
+    <string name="preparing_exercise">Assistenz\naktivieren</string>
     <string name="breathe">Breathe</string>
     <string name="monitor">Monitor</string>
     <string name="starting_up">Starting up</string>
@@ -28,7 +28,7 @@
 
     <!-- Summary Screen -->
     <string name="avgHR"> AvgHR </string>
-    <string name="restart">Restart</string>
+    <string name="restart">Neustart</string>
 
     <!-- Descriptions -->
     <string name="start_button_cd">Start</string>
@@ -44,8 +44,8 @@
     <string name="ending_continue">Ending other exercise. Continue?</string>
 
     <!-- Panic detected Dialog -->
-    <string name="panic_detected">Monitoring in process</string>
-    <string name="assistance_needed">Do you require assistance?</string>
+    <string name="panic_detected">Überwachung aktiv</string>
+    <string name="assistance_needed">Benötigen Sie Unterstützung?</string>
 
     <!-- Exercise Goal Met Dialog -->
     <string name="yes">Yes</string>
