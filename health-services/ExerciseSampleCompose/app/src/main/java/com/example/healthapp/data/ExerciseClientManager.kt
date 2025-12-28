@@ -63,6 +63,9 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.flow.callbackFlow
 import androidx.core.net.toUri
+import androidx.health.services.client.data.ExerciseInfo
+import androidx.health.services.client.data.ExerciseState
+import androidx.health.services.client.getCurrentExerciseInfo
 import com.example.healthapp.service.DynamicTimeWarping
 import com.example.healthapp.service.RealityCheck
 import com.google.android.gms.tasks.Tasks
@@ -100,6 +103,7 @@ constructor(
     var tenMinutesPassed = tenMinutesPassedMutableFlow.asStateFlow()
     private var tenMinutesTimerJob: Job? = null
     private var i = 0
+    private var hrMonitoringExercisePaused = false
     private val monitoringEndedMutableFlow = MutableStateFlow(false)
     val monitoringEnded = monitoringEndedMutableFlow.asStateFlow()
     val prePanicTemplate = DtwTemplates.Companion.prePanicSmoothedTemplate()
@@ -162,12 +166,26 @@ constructor(
 
     suspend fun pauseExercise() {
         logger.log("Pausing exercise")
-        exerciseClient.pauseExercise()
+        pauseHrMonitoringExercise()
+        if(exerciseClient.isExerciseInProgress()) {
+            exerciseClient.pauseExercise()
+        }
     }
 
     suspend fun resumeExercise() {
         logger.log("Resuming exercise")
-        exerciseClient.resumeExercise()
+        var info: ExerciseInfo? = null
+        try {
+            info = exerciseClient.getCurrentExerciseInfo()
+        } catch (e: Exception) {
+            Log.e("ExerciseClientManager", "getCurrentExerciseInfo failed - ${e.message}")
+        }
+        if(info != null) {
+            if(info.exerciseType == ExerciseState.USER_PAUSED) {
+                exerciseClient.resumeExercise()
+            }
+        }
+        hrMonitoringExercisePaused = false
     }
 
     /**
@@ -266,7 +284,7 @@ constructor(
             if (event?.sensor?.type == Sensor.TYPE_HEART_RATE) {
                 val heartRate = event.values[0]
 
-                if (heartRate > 0) { // Ignoriere ungültige Werte
+                if (heartRate > 0) { // Ungültige hr ignorieren
 
                     Log.i(
                         "ExerciseClientManager",
@@ -291,10 +309,10 @@ constructor(
                     Log.i("ExerciseClientManager", "HR Windowsize: ${dtwWindow.size}")
 
                     // 3. DTW-Analyse starten
-                    if (dtwWindow.size > 280) { // TODO auf 250 oder so machen
+                    if (dtwWindow.size > 280 && !hrMonitoringExercisePaused) { // mit Interpolationsspielraum und nur wenn Monitoring nicht gerade pausiert ist
                         Log.i(
                             "ExerciseClientManager",
-                            "Got at least 1 minute of Data. Size: ${dtwWindow.size}. Starting DTW analysis"
+                            "Got at least 4 minutes and 40 secs of Data. Size: ${dtwWindow.size}. Starting DTW analysis"
                         )
                         runDtwAnalysis()
                     }
@@ -377,7 +395,6 @@ constructor(
             Log.e("ExerciseClientManager", "No heartrate sensor detected. Sensors: $sensorList")
             return
         }
-
         sensorManager.registerListener(sensorListener, heartRateSensor, 1_000_000, sensorHander)
 
         // hier wird die Companionapp gestartet
@@ -406,6 +423,16 @@ constructor(
                 "No connected devices detected. Cannot launch remote Companion."
             )
         }
+    }
+
+    private fun pauseHrMonitoringExercise() {
+        tenMinutesTimerJob?.cancel()
+        tenMinutesTimerJob = null
+        //heartRateCriticalMutableFlow.value = false
+        tenMinutesPassedMutableFlow.value = false
+        hrMonitoringExercisePaused = true
+        stopBreathingExercise()
+        Log.i("ExerciseClientManager", "Pausiert.")
     }
 
     private fun stopHrMonitoring() {
