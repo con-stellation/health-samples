@@ -62,14 +62,14 @@ constructor(
     fun onDismissDialog() {
         // Schließe den Dialog und setze den Zustand im Manager zurück.
         showInterventionDialog_Mutable.value = false
-        dialogDismissedRecently = false
+        dialogDismissedRecently = true
         exerciseClientManager.stopBreathingExercise()
 
         viewModelScope.launch {
-            delay(5000)
+            delay(60000) // sodass immer korrekt Panik erkannt wird statt auf ungkleiche oldPanic und isCritical Werte zu setzen (wäre inkorrektes Verhalten). Aber damit es nicht stört wird hier ein Timer eingebaut
             dialogDismissedRecently = false
+            exerciseClientManager.resetCriticalHeartRateState()
         }
-        //exerciseClientManager.setCriticalHeartRateToPreviousState()
     }
 
 }
