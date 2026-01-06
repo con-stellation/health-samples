@@ -694,7 +694,7 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
         }
 
         val depth = (((deepSleep+remSleep)/optimalDepth)*100).roundToInt().coerceIn(0, 100)
-        val regularity = 100 - (calculateSleepRegularity(sleep)/(2*60*60)).roundToInt() // Timecap bei 2 Stunden angelegt.
+        val regularity = 100 - (calculateSleepRegularity(sleep)/(2*60*60)*100).roundToInt() // Timecap bei 2 Stunden angelegt.
         var interruptionsIndex = ((interruptions/7)*100).roundToInt().coerceIn(0, 100)
         interruptionsIndex = 100 - interruptionsIndex
         var restoration: Long = interruptionsIndex.toLong()
@@ -770,10 +770,10 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
     private suspend fun calculateHrvIndex(): Int {
         val currentHrv = dataStoreManager.readCurrentHrv().first()
         var hrvIndex = currentHrv / dataStoreManager.readHrvAvg().first()
-        if(currentHrv > 70) {
+        if(currentHrv >= 70) {
             hrvIndex = 100
         } else {
-            hrvIndex = (hrvIndex * 50).coerceIn(0,100)
+            hrvIndex = (hrvIndex * 100).coerceIn(0,100)
         }
 
         val hrvDataList = dataStoreManager.readHrvData().first().split(",").mapNotNull { it.trim().toIntOrNull() }.toMutableList()
