@@ -66,7 +66,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.forEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.io.IOException
@@ -463,6 +462,14 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
                 metrics = setOf(SleepSessionRecord.SLEEP_DURATION_TOTAL),
                 timeRangeFilter = sessionTimeFilter
             )
+
+            val hrReq = ReadRecordsRequest(
+                recordType = HeartRateRecord::class,
+                timeRangeFilter = sessionTimeFilter
+            )
+            val hrRecords = healthConnectClient.readRecords(hrReq).records
+            val heartRatePoints = hrRecords.flatMap { it.samples }.map { it.beatsPerMinute }
+
             val aggregateResponse = healthConnectClient.aggregate(durationAggregateRequest)
             sessions.add(
                 SleepSessionData(
@@ -474,7 +481,8 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
                     endTime = session.endTime,
                     endZoneOffset = session.endZoneOffset,
                     duration = aggregateResponse[SleepSessionRecord.SLEEP_DURATION_TOTAL],
-                    stages = session.stages
+                    stages = session.stages,
+                    heartRateSeries = heartRatePoints
                 )
             )
         }
@@ -658,23 +666,25 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
     /*
     Hier wird der Schlafindex berechnet. Er ist ein Kennwert für die Schlafqualität, welche sich wiederum auf
     die Psyche und den Stress der Nutzer auswirkt. Die Herangehensweise ist aus https://kiwi-health.de/en/sleep-quality-and-sleep-index/
-    entnommen.
+    und https://support.google.com/fitbit/answer/14236513?hl=en#zippy=%2Cwhats-my-fitbit-sleep-score%2Chow-is-my-sleep-score-calculated-in-the-fitbit-app%2Cwhats-restoration-in-the-fitbit-app entnommen.
      */
-    fun calculateSleepIndex(sleep: List<SleepSessionData>): Int {
+    suspend fun calculateSleepIndex(sleep: List<SleepSessionData>): Int {
         if(sleep.isEmpty()) {
             return 0
         }
-        val totalSleepDuration = sleep[0].duration?.toMillis()?.div(1000.0)
-        val optimalDepth = totalSleepDuration?.times(0.45) ?: 0.0
 
-        val duration = (sleep[0].duration?.toMillis()?.div(1000.0)?.div(8*60*60)?.times(100))?.roundToInt()
+        val sleepSession = sleep[0]
+        val daytimeRestingHr = readRestingHR(sleepSession.startTime, sleep[1].endTime)
+        val totalSleepDuration = sleepSession.duration?.toMillis()?.div(1000.0)
+        val optimalDepth = totalSleepDuration?.times(0.45) ?: 0.0
+        val duration = (sleepSession.duration?.toMillis()?.div(1000.0)?.div(8*60*60)?.times(100))?.roundToInt()
             ?:0
         var deepSleep = 0.0
         var remSleep = 0.0
         var interruptions = 0.0
 
         // hier werden die Schlafphasen-Dauern einzeln erhoben
-        sleep[0].stages.forEach{ stage ->
+        sleepSession.stages.forEach{ stage ->
             val stageDuration = stage.endTime.epochSecond - stage.startTime.epochSecond
             when(stage.stage) {
                 SleepSessionRecord.STAGE_TYPE_DEEP -> deepSleep += stageDuration
@@ -685,14 +695,22 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
 
         val depth = (((deepSleep+remSleep)/optimalDepth)*100).roundToInt().coerceIn(0, 100)
         val regularity = 100 - (calculateSleepRegularity(sleep)/(2*60*60)).roundToInt() // Timecap bei 2 Stunden angelegt.
-        var interruptionsIndex = ((interruptions/7)*100).roundToInt()
+        var interruptionsIndex = ((interruptions/7)*100).roundToInt().coerceIn(0, 100)
         interruptionsIndex = 100 - interruptionsIndex
-
+        var restoration: Long = interruptionsIndex.toLong()
+        if (sleepSession.heartRateSeries.isNotEmpty()) {
+            val averageSleepingHr = sleepSession.heartRateSeries.average()
+            if (averageSleepingHr > daytimeRestingHr) {
+                restoration += (100 - ((averageSleepingHr/daytimeRestingHr)*100).roundToInt().coerceIn(0,100))
+            } else {
+                restoration += 100
+            }
+        }
 
         var timeUntilAsleep = 0L
         // Nimmt alle Phasen, die nicht als eine Art Schlaf wahrgenommen wurden VOR dem ersten Schlafeintrag
         // und addiert die Dauer dieser Phasen zusammen für die Einschlafdauer
-        sleep[0].stages.takeWhile { stage ->
+        sleepSession.stages.takeWhile { stage ->
             stage.stage != SleepSessionRecord.STAGE_TYPE_REM &&
                     stage.stage != SleepSessionRecord.STAGE_TYPE_DEEP &&
                     stage.stage != SleepSessionRecord.STAGE_TYPE_LIGHT &&
@@ -700,13 +718,25 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
         }.forEach { s -> timeUntilAsleep += s.endTime.epochSecond - s.startTime.epochSecond }
         timeUntilAsleep = 100 - ((timeUntilAsleep/(30*60))*100).coerceIn(0, 100)
 
-        val index = (duration.times(0.4) + depth*0.25 + regularity*0.2 + interruptionsIndex*0.1 + timeUntilAsleep*0.05)/100
+        restoration = (restoration+regularity+timeUntilAsleep)/4
+
+        val index = (duration.times(0.5) + depth*0.25 + restoration*0.25)/100
 
         val resultSleepIndex = (index*100).roundToInt()
         Log.d("calculateSleepIndex", "totalSleepDuration: $totalSleepDuration, optimalDepth: $optimalDepth, duration: $duration, depth: $depth, regularity: $regularity, interruptionsIndex: $interruptionsIndex, timeUntilAsleep: $timeUntilAsleep")
         Log.d("calculateSleepIndex", "resultSleepIndex: $resultSleepIndex")
 
         return resultSleepIndex
+    }
+
+    // sollte den Daytime resting HR lesen
+    private suspend fun readRestingHR(recentSleepStart: Instant, previousSleepEnd: Instant): Double {
+        val request = ReadRecordsRequest(
+            recordType = RestingHeartRateRecord::class,
+            timeRangeFilter = TimeRangeFilter.between(previousSleepEnd, recentSleepStart)
+        )
+
+        return healthConnectClient.readRecords(request).records.map { it.beatsPerMinute }.average()
     }
 
     private fun calculateSleepRegularity(sleep: List<SleepSessionData>): Double {

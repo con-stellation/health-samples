@@ -32,5 +32,6 @@ data class SleepSessionData(
     val endTime: Instant,
     val endZoneOffset: ZoneOffset?,
     val duration: Duration?,
-    val stages: List<SleepSessionRecord.Stage> = listOf()
+    val stages: List<SleepSessionRecord.Stage> = listOf(),
+    val heartRateSeries: List<Long>
 )

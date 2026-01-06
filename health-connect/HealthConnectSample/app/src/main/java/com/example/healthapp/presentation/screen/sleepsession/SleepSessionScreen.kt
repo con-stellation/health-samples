@@ -141,7 +141,8 @@ fun SleepSessionScreenPreview() {
                             startTime = start1.toInstant(),
                             endTime = end1.toInstant()
                         )
-                    )
+                    ),
+                    heartRateSeries = TODO(),
                 ),
                 SleepSessionData(
                     uid = "123",
@@ -158,7 +159,8 @@ fun SleepSessionScreenPreview() {
                             startTime = start2.toInstant(),
                             endTime = end2.toInstant()
                         )
-                    )
+                    ),
+                    heartRateSeries = TODO(),
                 )
             ),
             uiState = SleepSessionViewModel.UiState.Done

@@ -136,7 +136,8 @@ fun SleepSessionRowPreview() {
                             startTime = start.toInstant(),
                             endTime = end.toInstant(),
                         )
-                    )
+                    ),
+                    heartRateSeries = TODO(),
                 ),
                 startExpanded = true
             )
