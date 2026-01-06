@@ -56,6 +56,8 @@ constructor(
             val stressIndex = dataStoreManager.readStressData().first()
             phoneAFriend.sendMessageToContact(true, stressIndex)
         }
+        // TODO hier ähnliche Logik wie in DismissDialog einbauen? Wenn zB jemand die Übung weitermachen will aber Beruhigung detektiert wird, sollte Dialogspam vermieden werden
+        // zB if(!exerciseClientManager.heartRateCritical) { scope.launch{delay(5min oder so)... und heartRateCritical auf true?)
         exerciseClientManager.startBreathingExercise()
     }
 
@@ -66,9 +68,9 @@ constructor(
         exerciseClientManager.stopBreathingExercise()
 
         viewModelScope.launch {
-            delay(60000) // sodass immer korrekt Panik erkannt wird statt auf ungkleiche oldPanic und isCritical Werte zu setzen (wäre inkorrektes Verhalten). Aber damit es nicht stört wird hier ein Timer eingebaut
+            delay(60000) // sodass immer korrekt Panik erkannt wird statt auf ungleiche oldPanic und isCritical Werte zu setzen (wäre inkorrektes Verhalten). Aber damit es nicht stört wird hier ein Timer eingebaut
             dialogDismissedRecently = false
-            exerciseClientManager.resetCriticalHeartRateState()
+            exerciseClientManager.resetCriticalHeartRateState() // war vorher auskommentiert
         }
     }
 
