@@ -188,7 +188,7 @@ fun TutorialDialog(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Willkommen beim Mental Health Assistant Tutorial! Möchten Sie fortfahren? (Mock-Dialog)"
+                    text = "Möchten Sie das Tutorial für die Bedienung Ihres Assistenten starten?"
                 )
             }
         },

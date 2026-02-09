@@ -18,19 +18,28 @@ package com.example.healthapp.presentation.component
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.text.HtmlCompat
 import com.example.healthapp.R
 import com.example.healthapp.presentation.theme.HealthConnectTheme
 
 /**
  * Welcome text shown when the app first starts, where the Healthcore APK is already installed.
  */
+
+
 @Composable
 fun InstalledMessage() {
+    val htmlFormattedText = stringResource(id = R.string.installed_welcome_message)
+    val annotatedString: AnnotatedString = HtmlCompat.fromHtml(htmlFormattedText, HtmlCompat.FROM_HTML_MODE_COMPACT)
+        .let { AnnotatedString(it.toString()) } // Konvertiere Spanned in AnnotatedString
+
     Text(
-        text = stringResource(id = R.string.installed_welcome_message),
-        textAlign = TextAlign.Justify
+        text = annotatedString,
+        textAlign = TextAlign.Left
     )
 }
 

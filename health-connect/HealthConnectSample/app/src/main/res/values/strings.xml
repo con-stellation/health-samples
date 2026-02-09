@@ -14,7 +14,7 @@
   ~ limitations under the License.
   -->
 <resources>
-    <string name="app_name">Health Connect Sample</string>
+    <string name="app_name">Mental Health Assistant</string>
     <string name="menu">menu</string>
 
     <!-- Screen titles -->
@@ -28,16 +28,12 @@
     <!-- Welcome screen -->
     <string name="welcome_message">Willkommen bei Ihrem Mental Health Assistant!</string>
     <string name="health_connect_logo">Health Connect logo</string>
-    <string name="installed_welcome_message">
-        Dieser Assistent soll mit Ihnen im Alltag koexistieren und Sie in stressigen Situationen, bei Angst oder auch Panik über Beruhigungseinheiten
-        und Nachrichtenfunktionen unterstützen.
-        Um genaueres herauszufinden, klicken Sie auf den Hilfe-Button oben rechts und starten Sie das Tutorial!
-        Achtung! Die Funktionen dieser Anwendung ersetzen keine professionelle Hilfe durch geschultes Fachpersonal. Annahmen, Scores und Fragebögen
-        dienen lediglich der Individualisierbarkeit der App-Funktionen und sind nicht als Diagnosemittel zu sehen.
-        Wenn Sie denken, dass Sie psychologische Unterstützung brauchen, wenden Sie sich bitte an zuständige Ärzt*innen oder folgende Stellen.
-        Seelensorge: 0800-111 0 111 oder 0800-111 0 222
-        Termine für Psychotherapie: 116117
-    </string>
+    <string name="installed_welcome_message"><![CDATA[
+    <p>Dieser Assistent soll Sie bei Stress, Angst und Panik im Arbeitsalltag unterstützen. Um genaueres herauszufinden, klicken Sie auf den Hilfe-Button oben rechts und starten Sie das Tutorial.</p><br/>
+    <p>lt;b>Achtung!lt;</b> Diese App ersetzt kein geschultes Fachpersonal. Annahmen, Scores und Fragebögen dienen lediglich als Stütze für Appfunktionen und sind nicht als Diagnosemittel zu sehen. Wenn Sie denken, dass Sie psychologische Unterstützung brauchen, wenden Sie sich bitte an zuständige Ärzt*innen oder kontaktieren Sie folgende Stellen:</p><br/>
+    <p>Seelsorge: 0800-111 0 111 oder 0800-111 0 222,<br/>Terminstelle für Therapien: 116117</p>
+]]></string>
+
     <string name="generate_data">Generate data</string>
     <string name="delete_data">Delete generated data</string>
 
