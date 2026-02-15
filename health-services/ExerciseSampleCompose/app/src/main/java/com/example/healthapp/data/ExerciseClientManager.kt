@@ -32,12 +32,8 @@ import androidx.health.services.client.ExerciseClient
 import androidx.health.services.client.ExerciseUpdateCallback
 import androidx.health.services.client.HealthServicesClient
 import androidx.health.services.client.data.Availability
-import androidx.health.services.client.data.ComparisonType
 import androidx.health.services.client.data.DataPointContainer
 import androidx.health.services.client.data.DataType
-import androidx.health.services.client.data.DataTypeCondition
-import androidx.health.services.client.data.ExerciseConfig
-import androidx.health.services.client.data.ExerciseGoal
 import androidx.health.services.client.data.ExerciseLapSummary
 import androidx.health.services.client.data.ExerciseType
 import androidx.health.services.client.data.ExerciseTypeCapabilities
@@ -49,7 +45,6 @@ import androidx.health.services.client.getCapabilities
 import androidx.health.services.client.pauseExercise
 import androidx.health.services.client.prepareExercise
 import androidx.health.services.client.resumeExercise
-import androidx.health.services.client.startExercise
 import androidx.wear.remote.interactions.RemoteActivityHelper
 import com.example.healthapp.service.ExerciseLogger
 import com.google.android.gms.wearable.Wearable
@@ -256,7 +251,11 @@ constructor(
         }
     }
 
-    fun stopBreathingExercise() {
+    fun announceDialog() {
+        realityCheck.executeDialogAnnouncement(vibrator)
+    }
+
+    suspend fun stopBreathingExercise() {
         tenMinutesPassedMutableFlow.value = false
         tenMinutesTimerJob?.cancel()
         if (breathingExerciseJob?.isActive == true) {
@@ -327,10 +326,10 @@ constructor(
 
         private fun runDtwAnalysis() {
             managerScope.launch {
-                // Extrahiere nur die HR-Werte aus deinem Fenster
                 val liveHrValues = dtwWindow.toDoubleArray()
-                // WICHTIG: Interpoliere die Live-Daten, damit sie die gleiche Länge wie das Template haben!
-                // DTW kann mit unterschiedlich langen Reihen umgehen, aber für den Vergleich ist gleiche Länge besser.
+                // WICHTIG: Live-Daten werden interpoliert, damit sie die gleiche Länge wie das Template haben!
+                // DTW kann mit unterschiedlich langen Reihen umgehen, aber gehen auf Nummer sicher. Trifft
+                // sowieso nur auf den Beginn zu, da dort der Buffer noch nicht voll ist
                 val interpolatedLiveValues = interpolate(liveHrValues, prePanicTemplate.size)
 
                 calmDtwDistance = min(
@@ -426,7 +425,7 @@ constructor(
         }
     }
 
-    private fun pauseHrMonitoringExercise() {
+    private suspend  fun pauseHrMonitoringExercise() {
         tenMinutesTimerJob?.cancel()
         tenMinutesTimerJob = null
         //heartRateCriticalMutableFlow.value = false
@@ -436,7 +435,7 @@ constructor(
         Log.i("ExerciseClientManager", "Pausiert.")
     }
 
-    private fun stopHrMonitoring() {
+    private suspend fun stopHrMonitoring() {
         sensorManager.unregisterListener(sensorListener)
         tenMinutesTimerJob?.cancel()
         tenMinutesTimerJob = null

@@ -45,9 +45,8 @@ class RealityCheck @Inject constructor(private val dataStoreManager: DataStoreMa
     }
 
      fun executeVibration(coroutineScope: CoroutineScope, vibrator: Vibrator): Job {
-        stopVibrating(vibrator)
-        Log.i("RealityCheck", "stopped previous vibration job.")
         vibrationJob = coroutineScope.launch(Dispatchers.Default) {
+            //stopVibrating(vibrator)
             val choice = dataStoreManager.readExerciseChoice().first()
             Log.i("RealityCheck", "ExerciseChoice: $choice")
             setExercise(choice)
@@ -71,10 +70,20 @@ class RealityCheck @Inject constructor(private val dataStoreManager: DataStoreMa
          return vibrationJob!!
     }
 
-    fun stopVibrating(vibrator: Vibrator) {
-        if(vibrationJob?.isActive == true) {
+    fun executeDialogAnnouncement(vibrator: Vibrator) {
+        var timings: LongArray = longArrayOf(500, 200, 500)
+        var amplitudes: IntArray = intArrayOf(100, 0, 100)
+        vibrator.vibrate(
+            VibrationEffect.createWaveform(
+                timings, amplitudes, -1))
+    }
+
+    suspend fun stopVibrating(vibrator: Vibrator) {
+        val vibrationJobCopy = vibrationJob
+        if(vibrationJobCopy?.isActive == true) {
             vibrator.cancel()
-            vibrationJob?.cancel()
+            vibrationJobCopy.cancel()
+            vibrationJobCopy.join()
         }
         vibrationJob = null
     }
