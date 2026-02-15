@@ -49,10 +49,11 @@ import java.time.ZonedDateTime
 data class Gad7Question(
     val questionText: String,
     val options: List<String> = listOf(
-        "Beinahe jeden Tag", // 0 Punkte
-        "An mehr als der Hälfte der Tage", // 1 Punkt
-        "An einzelnen Tagen", // 2 Punkte
-        "Überhaupt nicht" // 3 Punkte
+
+        "Beinahe jeden Tag", // 3 Punkte
+        "An mehr als der Hälfte der Tage", // 2 Punkt
+        "An einzelnen Tagen", //1 Punkte
+        "Überhaupt nicht", // 0 Punkte
     )
 )
 private val gad7Questions = listOf(
@@ -68,9 +69,7 @@ private val gad7Questions = listOf(
 
 @Composable
 fun GAD7Screen(
-    onConfirm: (totalScore: Int) -> Unit,
-    onDismiss: () -> Unit // Behalten wir für einen "Abbrechen"-Button
-) {
+    onConfirm: (totalScore: Int) -> Unit) {
     // 1. Zustand für die Antworten: Map<Frage-Index, Antwort-Index>
     // rememberSaveable stellt sicher, dass die Antworten eine Bildschirm-Rotation überleben.
     val answers = rememberSaveable { mutableStateOf<Map<Int, Int>>(emptyMap()) }
@@ -119,10 +118,6 @@ fun GAD7Screen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Button(onClick = onDismiss) {
-                Text("Abbrechen")
-            }
-
             Button(
                 onClick = {
                     // 4. Berechne den Score und rufe den Callback auf
