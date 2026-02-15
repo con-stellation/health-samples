@@ -209,7 +209,7 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
             val packageName = record.metadata.dataOrigin.packageName
             ExerciseSession(
                 startTime = dateTimeWithOffsetOrDefault(record.startTime, record.startZoneOffset),
-                endTime = dateTimeWithOffsetOrDefault(record.startTime, record.startZoneOffset),
+                endTime = dateTimeWithOffsetOrDefault(record.endTime, record.startZoneOffset),
                 id = record.metadata.id,
                 sourceAppInfo = healthConnectCompatibleApps[packageName],
                 title = record.title
@@ -659,15 +659,16 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
         val start = ZonedDateTime.now().minusDays(7).toInstant()
         // fetch data for calc
         val exerciseSessionRecord = readExerciseSessions(start, end)
+        Log.d("calculateStress", "exerciseSessionRecord: ${exerciseSessionRecord.size}")
         val sleep = readSleepSessions()
-        val anxietyIndex = dataStoreManager.readAnxietyScore().first()
+        val anxietyIndex = (dataStoreManager.readAnxietyScore().first() * (100.0/21.0)).roundToInt()
         val eventConfirmation = if(dataStoreManager.readEventConfirmation().first()) 0 else 100
         // calculate indices for more complex data and meanings
         val sleepIndex = calculateSleepIndex(sleep) // Je höher desto besser
         val hrvIndex = calculateHrvIndex() // Je höher desto besser
-        Log.i("calculateStress", "sleepIndex: $sleepIndex, hrvIndex: $hrvIndex, anxietyIndex: $anxietyIndex, eventConfirmation: $eventConfirmation")
         val exerciseIndex = calculateExerciseIndex(exerciseSessionRecord) // Je höher desto besser
-        val stressIndex = 100 - ((sleepIndex + hrvIndex + exerciseIndex + anxietyIndex + eventConfirmation) / 5)
+        Log.i("calculateStress", "sleepIndex: $sleepIndex, hrvIndex: $hrvIndex, anxietyIndex: $anxietyIndex, eventConfirmation: $eventConfirmation, exerciseIndex: $exerciseIndex")
+        val stressIndex = 100 - ((sleepIndex + 0 + exerciseIndex + anxietyIndex + eventConfirmation) / 5)
         if(stressIndex != dataStoreManager.readStressIndex().first()) {
             scope.launch {
                 val contactnumber = dataStoreManager.readEmergencyNumber().first()
@@ -704,14 +705,16 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
         val daytimeRestingHr = readRestingHR(sleepSession.startTime, sleep[1].endTime)
         val totalSleepDuration = sleepSession.duration?.toMillis()?.div(1000.0)
         val optimalDepth = totalSleepDuration?.times(0.45) ?: 0.0
-        val duration = (sleepSession.duration?.toMillis()?.div(1000.0)?.div(8*60*60)?.times(100))?.roundToInt()
+        val duration = ((totalSleepDuration?.div(8*60*60)?.times(100))?.coerceIn(
+            0.0, 100.0
+        ))?.roundToInt()
             ?:0
         var deepSleep = 0.0
         var remSleep = 0.0
         var interruptions = 0.0
 
         // hier werden die Schlafphasen-Dauern einzeln erhoben
-        sleepSession.stages.forEach{ stage ->
+        sleepSession.stages.forEach { stage ->
             val stageDuration = stage.endTime.epochSecond - stage.startTime.epochSecond
             when(stage.stage) {
                 SleepSessionRecord.STAGE_TYPE_DEEP -> deepSleep += stageDuration
@@ -721,14 +724,14 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
         }
 
         val depth = (((deepSleep+remSleep)/optimalDepth)*100).roundToInt().coerceIn(0, 100)
-        val regularity = 100 - (calculateSleepRegularity(sleep)/(2*60*60)*100).roundToInt() // Timecap bei 2 Stunden angelegt.
+        val regularity = ((calculateSleepRegularity(sleep)/(2*60*60))*100).roundToInt().coerceIn(0, 100)
+        // Timecap bei 2 Stunden angelegt.
         var interruptionsIndex = ((interruptions/7)*100).roundToInt().coerceIn(0, 100)
-        interruptionsIndex = 100 - interruptionsIndex
         var restoration: Long = interruptionsIndex.toLong()
         if (sleepSession.heartRateSeries.isNotEmpty()) {
             val averageSleepingHr = sleepSession.heartRateSeries.average()
-            if (averageSleepingHr > daytimeRestingHr) {
-                restoration += (100 - ((averageSleepingHr/daytimeRestingHr)*100).roundToInt().coerceIn(0,100))
+            if (!daytimeRestingHr.isNaN() && averageSleepingHr > (daytimeRestingHr)) {
+                restoration += (100 - (((averageSleepingHr/(daytimeRestingHr + 10))*100).roundToInt())).coerceIn(0,100) // auf daytimeRestingHr sollte ein Spielraum addiert werden (Diff zum letzten höheren Wert). Hier ist es 10
             } else {
                 restoration += 100
             }
@@ -796,13 +799,13 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
     // Je niedriger die HRV umso eher sei man wohl gestresst
     private suspend fun calculateHrvIndex(): Int {
         val currentHrv = dataStoreManager.readCurrentHrv().first()
-        var hrvIndex = currentHrv / dataStoreManager.readHrvAvg().first()
+        var hrvIndex = (currentHrv *(100.0/70.0)).roundToInt() /// dataStoreManager.readHrvAvg().first()
         if(currentHrv >= 70) {
             hrvIndex = 100
         } else {
-            hrvIndex = (hrvIndex * 100).coerceIn(0,100)
+            hrvIndex = hrvIndex.coerceIn(0,100)
         }
-
+        Log.d("calculateHrvIndex", "hrvIndex: $hrvIndex, currentHrv: $currentHrv")
         val hrvDataList = dataStoreManager.readHrvData().first().split(",").mapNotNull { it.trim().toIntOrNull() }.toMutableList()
         hrvDataList.add(dataStoreManager.readCurrentHrv().first())
         if(hrvDataList.size > 60) {
@@ -817,7 +820,7 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
         val weeklyDuration = exerciseSession.sumOf {
             Duration.between(it.startTime, it.endTime).toMinutes()
         }
-
+        Log.d("calculateExerciseIndex", "weeklyDuration: $weeklyDuration")
         val exerciseIndex = (weeklyDuration / 3*60)*100 // Laut https://adaa.org/living-with-anxiety/managing-anxiety/exercise-stress-and-anxiety ist eine über die Woche verteilte Fitnessroutine besser als einmal 3 Stunden.
 
         return exerciseIndex.coerceIn(0,100).toInt()
