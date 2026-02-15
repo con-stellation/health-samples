@@ -30,7 +30,7 @@
     <string name="health_connect_logo">Health Connect logo</string>
     <string name="installed_welcome_message"><![CDATA[
     <p>Dieser Assistent soll Sie bei Stress, Angst und Panik im Arbeitsalltag unterstützen. Um genaueres herauszufinden, klicken Sie auf den Hilfe-Button oben rechts und starten Sie das Tutorial.</p><br/>
-    <p>lt;b>Achtung!lt;</b> Diese App ersetzt kein geschultes Fachpersonal. Annahmen, Scores und Fragebögen dienen lediglich als Stütze für Appfunktionen und sind nicht als Diagnosemittel zu sehen. Wenn Sie denken, dass Sie psychologische Unterstützung brauchen, wenden Sie sich bitte an zuständige Ärzt*innen oder kontaktieren Sie folgende Stellen:</p><br/>
+    <p><b>Achtung!</b><br/>Diese App ersetzt kein geschultes Fachpersonal. Annahmen, Scores und Fragebögen dienen lediglich als Stütze für Appfunktionen und sind nicht als Diagnosemittel zu sehen. Wenn Sie denken, dass Sie psychologische Unterstützung brauchen, wenden Sie sich bitte an zuständige Ärzt*innen oder kontaktieren Sie folgende Stellen:</p><br/>
     <p>Seelsorge: 0800-111 0 111 oder 0800-111 0 222,<br/>Terminstelle für Therapien: 116117</p>
 ]]></string>
 
@@ -151,6 +151,6 @@
     <string name="affirmative">Ja</string>
     <string name="deny">Nein</string>
 
-    <string name="gad7_instruction">Wie oft fühlten Sie sich in den letzten 2 Wochen durch die folgenden Probleme beeinträchtigt?</string>
+    <string name="gad7_instruction">Hinweis: Für die Förderung Ihrer Privatsphäre und Selbstwahrnehmung werden die Markierungen im Formular nach komplettem Schließen der App entfernt. Die hinterlegten Werte werden für Sie verarbeitet. </string>
 
 </resources>
