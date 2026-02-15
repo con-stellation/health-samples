@@ -29,6 +29,8 @@ import androidx.compose.material.Button
 import androidx.compose.material.Switch
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -42,6 +44,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.health.connect.client.HealthConnectClient
 import com.example.healthapp.R
+import com.example.healthapp.data.HealthConnectManager
 
 /**
  * Settings screen for managing Health Connect preferences.
@@ -49,13 +52,28 @@ import com.example.healthapp.R
 
 @Composable
 fun SettingsScreen(
-    revokeAllPermissions: () -> Unit
+    revokeAllPermissions: () -> Unit,
+    viewModel: SettingsViewModel
 ) {
     val context = LocalContext.current
     var cloudChecked by rememberSaveable { mutableStateOf(false) }
     var tapChecked by rememberSaveable { mutableStateOf(false) }
     var employerChecked by rememberSaveable { mutableStateOf(false) }
+    val cloudChoice by viewModel.readCloudPreferences().collectAsState(initial = false)
+    val tapChoice by viewModel.readTapPreferences().collectAsState(initial = false)
+    val employerChoice by viewModel.readTeambuildingPreferences().collectAsState(initial = false)
 
+    LaunchedEffect(cloudChecked) {
+        cloudChecked = cloudChoice
+    }
+
+    LaunchedEffect(tapChecked) {
+        tapChecked = tapChoice
+    }
+
+    LaunchedEffect(employerChecked) {
+        employerChecked = employerChoice
+    }
 
     Column(
         modifier = Modifier
@@ -72,7 +90,7 @@ fun SettingsScreen(
             Switch(
                 modifier = Modifier.semantics { contentDescription = "Speichereinstellungen" },
                 checked = cloudChecked,
-                onCheckedChange = { cloudChecked = it }
+                onCheckedChange = { cloudChecked = it; viewModel.saveCloudPreferences(it) }
             )
             Spacer(modifier = Modifier.width(5.dp))
             Text(text = "Gesundheitsdaten in der Cloud sichern?")
@@ -86,10 +104,10 @@ fun SettingsScreen(
             Switch(
                 modifier = Modifier.semantics { contentDescription = "Freigabe für Ärzte" },
                 checked = tapChecked,
-                onCheckedChange = { tapChecked = it }
+                onCheckedChange = { tapChecked = it; viewModel.saveTapPreferences(it) }
             )
             Spacer(modifier = Modifier.width(5.dp))
-            Text(text = "Gesundheitsdaten für Arbeitgeber freigeben?")
+            Text(text = "Gesundheitsdaten für Ärzte freigeben?")
         }
         Spacer(modifier = Modifier.height(16.dp))
         Row(
@@ -100,7 +118,7 @@ fun SettingsScreen(
             Switch(
                 modifier = Modifier.semantics { contentDescription = "Freigabe für Arbeitgeber" },
                 checked = employerChecked,
-                onCheckedChange = { employerChecked = it }
+                onCheckedChange = { employerChecked = it; viewModel.saveTeambuildingPreferences(it) }
             )
             Spacer(modifier = Modifier.width(10.dp))
             Text(text = "Gesundheitsdaten für Arbeitgeber freigeben?")

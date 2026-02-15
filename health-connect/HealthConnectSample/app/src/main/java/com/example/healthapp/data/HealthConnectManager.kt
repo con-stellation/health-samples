@@ -227,11 +227,38 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
         dataStoreManager.saveInitUserInputState(state)
     }
 
+    suspend fun saveTapPreferences(choice: Boolean) {
+        dataStoreManager.saveTapPreferences(choice)
+    }
+
+    suspend fun saveCloudPreferences(choice: Boolean) {
+        dataStoreManager.saveCloudPreferences(choice)
+    }
+
+    suspend fun saveTeambuildingPreferences(choice: Boolean) {
+        dataStoreManager.saveTeambuildingPreferences(choice)
+    }
+
+    fun readCloudPreferences(): Flow<Boolean> {
+        return dataStoreManager.readCloudPreferences()
+    }
+
+    fun readTeambuildingPreferences(): Flow<Boolean> {
+        return dataStoreManager.readTeambuildingPreferences()
+    }
+
+    fun readTapPreferences(): Flow<Boolean> {
+        return dataStoreManager.readTapPreferences()
+    }
+
     suspend fun saveExerciseChoice(choice: String) {
         dataStoreManager.saveExerciseChoice(choice)
         sendExerciseChoiceToWatch(choice)
     }
 
+    fun readExerciseChoice(): Flow<String> {
+        return dataStoreManager.readExerciseChoice()
+    }
     /**
      * Writes an [ExerciseSessionRecord] to Health Connect, and additionally writes underlying data for
      * the session too, such as [StepsRecord], [DistanceRecord] etc.
@@ -935,6 +962,9 @@ class HealthConnectManager(private val context: Context, private val dataStoreMa
         dataStoreManager.saveAnxietyScore(number)
     }
 
+    fun readFormular(): Flow<Map<Int, Int>> {
+        return dataStoreManager.readGad7FormularState()
+    }
     override fun onDataChanged(dataEvents: DataEventBuffer) {
 
         dataEvents.forEach { dataEvent ->

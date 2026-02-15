@@ -35,9 +35,6 @@ import com.example.healthapp.presentation.screen.SettingsScreen
 import com.example.healthapp.presentation.screen.WelcomeScreen
 import com.example.healthapp.presentation.screen.WelcomeScreenViewModel
 import com.example.healthapp.presentation.screen.WelcomeScreenViewModelFactory
-import com.example.healthapp.presentation.screen.changes.DifferentialChangesScreen
-import com.example.healthapp.presentation.screen.changes.DifferentialChangesViewModel
-import com.example.healthapp.presentation.screen.changes.DifferentialChangesViewModelFactory
 import com.example.healthapp.presentation.screen.exercisesession.ExerciseSessionScreen
 import com.example.healthapp.presentation.screen.exercisesession.ExerciseSessionViewModel
 import com.example.healthapp.presentation.screen.exercisesession.ExerciseSessionViewModelFactory
@@ -65,6 +62,8 @@ import com.example.healthapp.presentation.screen.userinputs.PhoneAFriendViewMode
 import com.example.healthapp.showExceptionSnackbar
 import kotlinx.coroutines.launch
 import android.Manifest
+import com.example.healthapp.presentation.screen.SettingsViewModel
+import com.example.healthapp.presentation.screen.SettingsViewModelFactory
 import com.example.healthapp.presentation.screen.userinputs.ExerciseChoiceScreen
 import com.example.healthapp.presentation.screen.userinputs.ExerciseChoiceViewModel
 import com.example.healthapp.presentation.screen.userinputs.ExerciseChoiceViewModelFactory
@@ -173,7 +172,15 @@ fun HealthConnectNavigation(
             PrivacyPolicyScreen()
         }
         composable(Screen.SettingsScreen.route){
-            SettingsScreen { scope.launch { healthConnectManager.revokeAllPermissions() } }
+            val viewModel: SettingsViewModel = viewModel(
+                factory = SettingsViewModelFactory(
+                    healthConnectManager = healthConnectManager,
+                )
+            )
+            SettingsScreen(
+                { scope.launch { healthConnectManager.revokeAllPermissions() } },
+                viewModel = viewModel
+            )
         }
         composable(Screen.ExerciseSessions.route) {
 
@@ -307,42 +314,6 @@ fun HealthConnectNavigation(
                     permissionsLauncher.launch(values)}
             )
         }
-//        composable(Screen.DifferentialChanges.route) {
-//            val viewModel: DifferentialChangesViewModel = viewModel(
-//                factory = DifferentialChangesViewModelFactory(
-//                    healthConnectManager = healthConnectManager
-//                )
-//            )
-//            val changesToken by viewModel.changesToken
-//            val permissionsGranted by viewModel.permissionsGranted
-//            val permissions = viewModel.permissions
-//            val onPermissionsResult = {viewModel.initialLoad()}
-//            val permissionsLauncher =
-//                rememberLauncherForActivityResult(viewModel.permissionsLauncher) {
-//                onPermissionsResult()}
-//            DifferentialChangesScreen(
-//                permissionsGranted = permissionsGranted,
-//                permissions = permissions,
-//                changesEnabled = changesToken != null,
-//                onChangesEnable = { enabled ->
-//                    viewModel.enableOrDisableChanges(enabled)
-//                },
-//                changes = viewModel.changes,
-//                changesToken = changesToken,
-//                onGetChanges = {
-//                    viewModel.getChanges()
-//                },
-//                uiState = viewModel.uiState,
-//                onError = { exception ->
-//                    showExceptionSnackbar(scaffoldState, scope, exception)
-//                },
-//                onPermissionsResult = {
-//                    viewModel.initialLoad()
-//                }
-//            ) { values ->
-//                permissionsLauncher.launch(values)
-//            }
-//        }
         composable(Screen.AppointmentInfo.route) {
             val viewModel: AppointmentInfoViewModel = viewModel(
                 factory = AppointmentInfoViewModelFactory(
@@ -392,8 +363,6 @@ fun HealthConnectNavigation(
                     } else {
                         Log.d("SmsPermission", "SEND_SMS permission wurde verweigert. (Screen)")
                         healthConnectManager.updateSmsPermissionStatus()
-                        // Hier solltest du dem Nutzer erklären, warum die Berechtigung benötigt wird
-                        // (z.B. mit einer Snackbar).
                     }
                 }
             )
@@ -404,7 +373,7 @@ fun HealthConnectNavigation(
                             message = "Telefonnummer erfolgreich gespeichert!"
                         )
                     }
-                    // 3. Setze den Zustand im ViewModel zurück, um die Snackbar nicht erneut zu zeigen
+                    // Setze den Zustand im ViewModel zurück, um die Snackbar nicht erneut zu zeigen
                     viewModel.resetSaveState()
                 }
             }
@@ -441,8 +410,7 @@ fun HealthConnectNavigation(
             GAD7Screen (
                 onConfirm = { score ->
                     viewModel.saveGAD7Info(score)
-                },
-                onDismiss = { }
+                }
             )
         }
         composable(Screen.ExerciseChoice.route) {
@@ -464,10 +432,11 @@ fun HealthConnectNavigation(
                     viewModel.resetSaveState()
                 }
             }
-            ExerciseChoiceScreen (
+            ExerciseChoiceScreen(
                 onChoiceSaved = { choice ->
                     viewModel.saveExerciseChoice(choice)
-                }
+                },
+                viewModel = viewModel
             )
         }
     }
